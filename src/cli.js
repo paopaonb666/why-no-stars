@@ -1,7 +1,7 @@
 // CLI entry: argument parsing, orchestration, friendly errors, exit codes.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError } from './api.js';
+import { GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError, ApiError } from './api.js';
 import { collectFacts } from './collect.js';
 import { runChecks } from './checks/index.js';
 import { scoreChecks } from './score.js';
@@ -78,6 +78,12 @@ Works without an API key. Set GITHUB_TOKEN to raise the limit from 60 to 5000 re
 `);
 
 export class UsageError extends Error {}
+
+// Major Node version from a version string ("22.5.1" -> 22); 0 when unparseable.
+export function nodeMajor(ua = process.versions?.node) {
+  const n = Number.parseInt(String(ua ?? '').split('.')[0], 10);
+  return Number.isInteger(n) ? n : 0;
+}
 
 export function parseArgs(argv) {
   const opts = {
@@ -216,12 +222,25 @@ export async function main(argv) {
       );
       return 1;
     }
+    if (err instanceof ApiError) {
+      console.error(
+        zh ? `GitHub API 出错：${err.message}` : `GitHub API error: ${err.message}`
+      );
+      return 1;
+    }
     throw err;
   }
 
   say(zh ? '→ 正在体检并评分 …' : '→ running checks and scoring …');
   const checks = runChecks(facts);
   const scorecard = scoreChecks(checks, { isArchived: facts.isArchived });
+
+  // Heads-up before the benchmark burns calls the user may not have.
+  if (!opts.noBenchmark && client.lastRemaining !== null && client.lastRemaining < 10) {
+    say(zh
+      ? `· API 剩余额度仅 ${client.lastRemaining} 次——生态对比可能被跳过。配置 GITHUB_TOKEN 可获得 5000 次/小时。`
+      : `· Only ${client.lastRemaining} API calls left — the benchmark may be skipped. Set GITHUB_TOKEN for 5000/h.`);
+  }
 
   let benchmark = null;
   if (!opts.noBenchmark) {

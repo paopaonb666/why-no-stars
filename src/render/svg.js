@@ -1,8 +1,9 @@
 // Shareable SVG scorecard (1200x630, OG-image sized, GitHub-dark palette).
 import { T, fmtNum, fmtTopEn, fmtTopZh } from './terminal.js';
+import { sanitize } from '../ansi.js';
 
 function esc(s) {
-  return String(s)
+  return sanitize(s)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')

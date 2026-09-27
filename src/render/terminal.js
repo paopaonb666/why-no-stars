@@ -1,10 +1,12 @@
 // Terminal scorecard renderer. CJK-width aware, color-aware.
-import { bold, dim, gray, green, yellow, red, cyan, padEnd, padStart, vwidth, useColor } from '../ansi.js';
+import { bold, dim, gray, green, yellow, red, cyan, padEnd, padStart, vwidth, useColor, sanitize } from '../ansi.js';
 
 export function T(x, lang) {
   if (x == null) return '';
-  if (typeof x === 'string') return x;
-  return x[lang] ?? x.en ?? '';
+  const s = typeof x === 'string' ? x : x[lang] ?? x.en ?? '';
+  // Single sanitization boundary for every rendered string (repo-controlled
+  // text must not smuggle escape sequences into the report).
+  return sanitize(s);
 }
 
 export function fmtNum(n) {

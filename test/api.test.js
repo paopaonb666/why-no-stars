@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError,
+  GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError, ApiError,
 } from '../src/api.js';
 import { fetchPayloads, buildFacts } from '../src/collect.js';
+import { sanitize } from '../src/ansi.js';
 
 // Minimal Response stand-in: { status, body, headers } -> what api.js reads.
 function fakeFetch(routes) {
@@ -71,12 +72,12 @@ test('client: error mapping — 404/401/403/429/5xx', async () => {
     [{ '/x': { status: 401 } }, AuthError],
     [{ '/x': { status: 403, headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '123' } } }, RateLimitError],
     [{ '/x': { status: 429, headers: { 'x-ratelimit-remaining': '5' } } }, RateLimitError],
-    [{ '/x': { status: 500 } }, Error],
+    [{ '/x': { status: 500 } }, ApiError],
   ];
   for (const [routes, expected] of cases) {
     await assert.rejects(
       new GitHubClient({ fetchImpl: fakeFetch(routes) }).get('/x'),
-      (err) => err instanceof expected || (expected === Error && err.constructor === Error)
+      (err) => err instanceof expected
     );
   }
   // 403 with quota left: forbidden, not rate-limit, message hints at secondary limits
@@ -158,4 +159,53 @@ test('fetchPayloads: stale profile triggers probes; results are three-state', as
   const facts = buildFacts(payloads, { now: new Date() });
   assert.equal(facts.issueTemplateKnown, true);
   assert.equal(facts.securityPolicyKnown, false);
+});
+
+// Flaky-fetch helpers: fail the first N calls, then succeed.
+function flakyFetch(failTimes, failure, okBody = { fine: true }) {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls++;
+    if (calls <= failTimes) return failure();
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => okBody };
+  };
+  fetchImpl.calls = () => calls;
+  return fetchImpl;
+}
+
+test('client: retries a dead connection once, then succeeds', async () => {
+  const fetchImpl = flakyFetch(1, () => { throw new TypeError('fetch failed'); });
+  const data = await new GitHubClient({ fetchImpl, retryDelayMs: 0 }).get('/x');
+  assert.deepEqual(data, { fine: true });
+  assert.equal(fetchImpl.calls(), 2);
+});
+
+test('client: retries 503 once, then succeeds; 404 never retries', async () => {
+  const flaky503 = flakyFetch(1, () => ({
+    ok: false, status: 503, headers: { get: () => null }, json: async () => ({}),
+  }));
+  await new GitHubClient({ fetchImpl: flaky503, retryDelayMs: 0 }).get('/x');
+  assert.equal(flaky503.calls(), 2);
+
+  const fatal404 = flakyFetch(1, () => ({
+    ok: false, status: 404, headers: { get: () => null }, json: async () => ({}),
+  }));
+  await assert.rejects(new GitHubClient({ fetchImpl: fatal404, retryDelayMs: 0 }).get('/x'), NotFoundError);
+  assert.equal(fatal404.calls(), 1); // 4xx must not burn a second attempt
+});
+
+test('client: retries exhausted -> NetworkError with both attempts made', async () => {
+  const fetchImpl = flakyFetch(99, () => { throw new TypeError('fetch failed'); });
+  await assert.rejects(
+    new GitHubClient({ fetchImpl, retryDelayMs: 0 }).get('/x'),
+    (err) => err instanceof NetworkError && err.timedOut === false
+  );
+  assert.equal(fetchImpl.calls(), 2); // 1 initial + 1 retry (retries: 1 default)
+});
+
+test('sanitize: repo-controlled text cannot carry terminal escapes', () => {
+  assert.equal(sanitize('\x1b[31mred\x1b[0m'), 'red');
+  assert.equal(sanitize('\x1b[2J\x1b[3J'), ''); // clear-screen sequences removed whole
+  assert.equal(sanitize('a\u0000b\u0007c'), 'a b c'); // control chars -> space
+  assert.equal(sanitize('plain 中文 text'), 'plain 中文 text');
 });

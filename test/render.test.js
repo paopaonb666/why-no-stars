@@ -93,3 +93,18 @@ test('terminal renderer English output', () => {
   assert.ok(out.includes('Overall'));
   assert.ok(out.includes('Top fixes'));
 });
+
+test('repo-controlled escape sequences never reach the rendered reports', () => {
+  const s = setup();
+  s.facts.description = 'A demo \x1b[31m<repo>\x1b[0m & more\u0007';
+  for (const rendered of [
+    renderTerminal(s),
+    renderMarkdown(s),
+    renderSvg(s),
+  ]) {
+    assert.ok(!rendered.includes('\x1b'), 'raw ESC reached the output');
+    assert.ok(!rendered.includes('\u0007'), 'control char reached the output');
+  }
+  // the visible text survives (markdown shows evidence rows for every check)
+  assert.ok(renderMarkdown(s).includes('A demo <repo> & more'));
+});

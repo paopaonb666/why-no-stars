@@ -51,3 +51,13 @@ export function padStart(s, n) {
 export function stripAnsi(s) {
   return String(s).replace(/\x1b\[[0-9;]*m/g, '');
 }
+
+// Repo-controlled text (descriptions, README strings, tag names) must never
+// carry terminal escape sequences or control chars into a report — a crafted
+// description could otherwise repaint the terminal. ANSI sequences are removed
+// whole; any other control char becomes a plain space.
+export function sanitize(s) {
+  return String(s)
+    .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ');
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, parseSlug, UsageError, main } from '../src/cli.js';
+import { parseArgs, parseSlug, UsageError, main, nodeMajor } from '../src/cli.js';
 
 test('parseSlug: URLs, .git suffix, trailing slashes, case', () => {
   assert.deepEqual(parseSlug('a/b'), { owner: 'a', name: 'b' });
@@ -32,4 +32,12 @@ test('main: usage errors exit 1 without touching the network', async () => {
   assert.equal(await main(['not-a-slug']), 1);
   assert.equal(await main(['a/b', '--svg']), 1); // flag value validation fires first
   assert.equal(await main(['a/b', '--nope']), 1);
+});
+
+test('nodeMajor: parses Node version strings for the runtime guard', () => {
+  assert.equal(nodeMajor('22.5.1'), 22);
+  assert.equal(nodeMajor('18.0.0'), 18);
+  assert.equal(nodeMajor('24.14.1'), 24);
+  assert.equal(nodeMajor('garbage'), 0);
+  assert.equal(nodeMajor(''), 0);
 });
