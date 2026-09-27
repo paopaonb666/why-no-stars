@@ -35,9 +35,11 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
   const f = facts;
   const out = [];
   const push = (line = '') => out.push(line);
+  // Rule lines shrink for narrow terminals (non-TTY keeps the 64-col design).
+  const ruleW = Math.min(64, Math.max(30, process.stdout?.columns || 64));
 
   push(bold('why-no-stars') + gray(' · ') + bold(T({ en: 'Repo Scorecard', zh: '仓库体检报告' }, locale)));
-  push(gray('─'.repeat(64)));
+  push(gray('─'.repeat(ruleW)));
   const tags = [
     f.isArchived ? red(T({ en: 'ARCHIVED', zh: '已归档' }, locale)) : null,
     f.isFork ? yellow(T({ en: 'FORK', zh: 'FORK' }, locale)) : null,
@@ -138,7 +140,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
   }
   push();
   push(
-    gray('─'.repeat(64)) +
+    gray('─'.repeat(ruleW)) +
       gray(`  why-no-stars · ${T({ en: 'stars aren’t luck.', zh: 'star 不是玄学，是前 10 秒的功夫。' }, locale)} npx why-no-stars <owner/repo>`)
   );
   return out.join('\n');

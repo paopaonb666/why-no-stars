@@ -68,10 +68,21 @@ export function firstImpressionChecks(f) {
     return out;
   }
 
+  // Translated READMEs (README.zh-CN.md, README.es.md, …) widen reach; a
+  // detail-only enrichment — the score must not depend on which languages.
+  const readmeVariants = f.rootFiles
+    .map((x) => x.name)
+    .filter((n) => /^readme(\.[a-z]{2,3}(-[a-z]{2,4})?)?\.(md|markdown|txt)$/i.test(n))
+    .filter((n) => !/^readme\.(md|markdown|txt)$/i.test(n));
   out.push(
     check('readme-exists', 'first-impression', { en: 'README exists', zh: 'README 存在' }, {
       status: 'pass',
-      detail: { en: `${f.readme.lineCount} lines`, zh: `${f.readme.lineCount} 行` },
+      detail: readmeVariants.length
+        ? {
+            en: `${f.readme.lineCount} lines · also available in: ${readmeVariants.join(', ')}`,
+            zh: `${f.readme.lineCount} 行 · 另有语言版本：${readmeVariants.join('、')}`,
+          }
+        : { en: `${f.readme.lineCount} lines`, zh: `${f.readme.lineCount} 行` },
     })
   );
 

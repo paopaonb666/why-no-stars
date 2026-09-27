@@ -172,6 +172,16 @@ test('real-world fixture (sindresorhus/got): healthy repo passes key checks', { 
   assert.equal(sc.overall >= 70, true, `got scored ${sc.overall}`);
 });
 
+test('got fixture at a fixed date pins the score (methodology tripwire)', { skip: !existsSync(FIXTURE) && 'fixture not recorded yet' }, () => {
+  const payloads = JSON.parse(readFileSync(FIXTURE, 'utf8'));
+  const facts = buildFacts(payloads, { now: new Date('2026-09-27T00:00:00Z') });
+  const sc = scoreChecks(runChecks(facts), { isArchived: facts.isArchived });
+  // If this pins break, scoring methodology moved — update it deliberately
+  // and say so in the changelog.
+  assert.equal(sc.overall, 92);
+  assert.equal(sc.grade, 'S');
+});
+
 const REACT_FIXTURE = new URL('./fixtures/react.json', import.meta.url);
 
 test('real-world fixture (facebook/react): mega-repo paths hold up on live data', { skip: !existsSync(REACT_FIXTURE) && 'fixture not recorded yet' }, () => {

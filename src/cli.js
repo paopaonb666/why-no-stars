@@ -24,9 +24,9 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   wns <owner/repo> [选项]
 
 选项:
-  --svg <file>     输出可分享的 SVG 评分卡
-  --json <file>    输出机器可读的完整 JSON 报告
-  --md <file>      输出 Markdown 报告（可直接贴到 issue/discussion）
+  --svg <file>     输出可分享的 SVG 评分卡（- 表示 stdout）
+  --json <file>    输出机器可读的完整 JSON 报告（- 表示 stdout）
+  --md <file>      输出 Markdown 报告，可直接贴到 issue/discussion（- 表示 stdout）
   --zh             用中文输出（默认自动检测）
   --en             用英文输出
   --lang <lang>    覆盖自动识别的主语言（用于生态分位对比）
@@ -56,9 +56,9 @@ Usage:
   wns <owner/repo> [options]
 
 Options:
-  --svg <file>     write a shareable SVG scorecard
-  --json <file>    write a machine-readable JSON report
-  --md <file>      write a Markdown report (paste into issues/discussions)
+  --svg <file>     write a shareable SVG scorecard (- = stdout)
+  --json <file>    write a machine-readable JSON report (- = stdout)
+  --md <file>      write a Markdown report to paste into issues (- = stdout)
   --zh             output in Chinese
   --en             output in English
   --lang <lang>    override the detected primary language (for benchmarking)
@@ -361,8 +361,13 @@ export async function main(argv) {
 
   // Per-file emit: a bad path in --md must not swallow the --svg output,
   // and a write failure must exit non-zero instead of dumping a stack.
+  // "-" as the filename prints to stdout instead (pipe-friendly).
   let writeFailed = false;
   const emit = (file, content) => {
+    if (file === '-') {
+      console.log(content);
+      return;
+    }
     try {
       writeFileSafe(file, content);
     } catch (err) {
