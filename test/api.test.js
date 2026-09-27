@@ -272,3 +272,62 @@ test('client: no etagStore -> no If-None-Match, plain behavior', async () => {
   assert.deepEqual(await new GitHubClient({ fetchImpl: f }).get('/x'), { value: 42 });
   assert.equal(f.state.calls, 2); // two plain 200s, no 304 path
 });
+
+test('client: a 200 with a non-JSON body raises ApiError, not SyntaxError', async () => {
+  const proxyPage = async () => ({
+    ok: true, status: 200, headers: { get: () => null },
+    json: async () => { throw new SyntaxError('Unexpected token < in JSON'); },
+  });
+  await assert.rejects(
+    new GitHubClient({ fetchImpl: proxyPage }).get('/x'),
+    (err) => err instanceof ApiError && /not valid JSON/.test(err.message)
+  );
+});
+
+// Full route table for fetchPayloads-level tests; okRoutes only covers /repos/o/r.
+function fullRoutes(extra = {}) {
+  return okRoutes({
+    '/repos/o/r/languages': { body: { JavaScript: 10 } },
+    '/repos/o/r/community/profile': { body: { files: {} } },
+    '/repos/o/r/contents': { body: [] },
+    '/repos/o/r/tags?per_page=30': { body: [] },
+    '/repos/o/r/releases?per_page=10': { body: [] },
+    '/repos/o/r/contributors?per_page=100': { body: [] },
+    '/repos/o/r/stargazers?per_page=100&page=1': { body: [] },
+    '/repos/o/r/contents/package.json': { status: 404 },
+    '/repos/o/r/readme': { status: 404 },
+    '/repos/o/r/actions/workflows?per_page=100': { body: { total_count: 0, workflows: [] } },
+    '/repos/o/r/events?per_page=100': { status: 404 },
+    '/repos/o/r/contents/.github/ISSUE_TEMPLATE': { status: 404 },
+    '/repos/o/r/contents/SECURITY.md': { status: 404 },
+    ...extra,
+  });
+}
+
+const QUOTA_403 = { status: 403, headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '123' } };
+
+test('fetchPayloads: a rate limit mid-collection aborts the audit (ok() rethrows)', async () => {
+  const routes = fullRoutes({ '/repos/o/r/community/profile': QUOTA_403 });
+  const client = new GitHubClient({ fetchImpl: fakeFetch(routes) });
+  await assert.rejects(fetchPayloads(client, 'o', 'r'), RateLimitError);
+});
+
+test('fetchPayloads: a rate limit during a contents probe aborts too (probe rethrows)', async () => {
+  const routes = fullRoutes({
+    '/repos/o/r/community/profile': { body: { files: {} } }, // probe gets triggered
+    '/repos/o/r/contents/.github/ISSUE_TEMPLATE': QUOTA_403,
+  });
+  const client = new GitHubClient({ fetchImpl: fakeFetch(routes) });
+  await assert.rejects(fetchPayloads(client, 'o', 'r'), RateLimitError);
+});
+
+test('fetchPayloads: transient failures derive unknown states (never absence)', async () => {
+  const routes = fullRoutes({
+    '/repos/o/r/readme': { status: 503 },
+    '/repos/o/r/contents/package.json': { status: 500 },
+  });
+  const client = new GitHubClient({ fetchImpl: fakeFetch(routes) });
+  const payloads = await fetchPayloads(client, 'o', 'r');
+  assert.equal(payloads.readmeState, 'unknown');
+  assert.equal(payloads.packageJsonKnown, false);
+});

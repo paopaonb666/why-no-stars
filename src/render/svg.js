@@ -44,13 +44,17 @@ export function fitText(text, maxWidth, baseSize, minSize = 14) {
   return { text: out, size };
 }
 
-export function renderSvg({ facts, scorecard, benchmark, locale }) {
+export function renderSvg({ facts, scorecard, benchmark, locale, stale = false }) {
   const f = facts;
   const W = 1200;
   const H = 630;
   const zh = locale === 'zh';
   const accent = colorFor(scorecard.overall);
   const FONT = 'Segoe UI, PingFang SC, Microsoft YaHei, sans-serif';
+  // A shared card must never masquerade as a live audit.
+  const staleNote = stale
+    ? (zh ? '⚠ 数据非实时（限流，使用缓存生成）' : '⚠ STALE DATA (rate-limited, rendered from cache)')
+    : null;
 
   // Vertical rhythm (baselines): name 84, meta 124, benchmark 166,
   // big score 300, /100 336, grade chip 220-300, pillars 356..556, footer 608.
@@ -115,6 +119,7 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   <text x="90" y="84" font-family="${FONT}" font-size="${nameFit.size}" font-weight="700" fill="#e6edf3">${esc(nameFit.text)}</text>
   <text x="90" y="124" font-family="${FONT}" font-size="${metaFit.size}" fill="#8b949e">${esc(metaFit.text)}</text>
   <text x="90" y="166" font-family="${FONT}" font-size="${benchFit.size}" fill="#58a6ff">${esc(benchFit.text)}</text>
+  ${staleNote ? `<text x="90" y="198" font-family="${FONT}" font-size="17" fill="#d29922">${esc(staleNote)}</text>` : ''}
 
   <text x="90" y="300" font-family="${FONT}" font-size="110" font-weight="800" fill="${accent}">${scorecard.overall}</text>
   <text x="90" y="336" font-family="${FONT}" font-size="24" fill="#8b949e">/100 ${zh ? '总分' : 'overall'}</text>

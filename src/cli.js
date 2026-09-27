@@ -391,8 +391,8 @@ export async function main(argv) {
     }
   };
 
-  if (opts.svg) emit(opts.svg, renderSvg({ facts, scorecard, benchmark, locale }));
-  if (opts.md) emit(opts.md, renderMarkdown({ facts, scorecard, benchmark, locale }));
+  if (opts.svg) emit(opts.svg, renderSvg({ facts, scorecard, benchmark, locale, stale }));
+  if (opts.md) emit(opts.md, renderMarkdown({ facts, scorecard, benchmark, locale, stale }));
   if (opts.json) {
     emit(opts.json, JSON.stringify(buildJsonReport({
       facts, scorecard, benchmark, checks, version: VERSION, delta, stale, locale,

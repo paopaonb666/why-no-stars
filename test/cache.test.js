@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -76,8 +76,10 @@ test('unsafe filenames are sanitized (slugs and languages are external input)', 
   const dir = tempDir();
   try {
     writeData(dir, 'search-C++.json', { counts: [1] });
-    // '+' would break naive paths; the written file name must be sanitized
     assert.equal(readData(dir, 'search-C++.json').counts[0], 1);
+    // the ON-DISK name must be sanitized, not just the lookup:
+    // '+' is legal on some filesystems, so assert the sanitized name exists
+    assert.equal(existsSync(join(dir, 'search-C_.json')), true);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

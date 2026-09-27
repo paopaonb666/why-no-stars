@@ -82,8 +82,9 @@ export function scoreChecks(checks, { isArchived = false } = {}) {
 }
 
 export function computePercentile(counts, stars) {
-  // counts: star-count totals per BUCKETS entry (ascending buckets).
-  if (!Array.isArray(counts) || counts.some((c) => typeof c !== 'number' || c < 0)) return null;
+  // counts: star-count totals per BUCKETS entry (ascending buckets). A short
+  // array (e.g. cache drift from an older version) would make `through` NaN.
+  if (!Array.isArray(counts) || counts.length < BUCKET_INDEX.length || counts.some((c) => typeof c !== 'number' || c < 0)) return null;
   const total = counts.reduce((a, b) => a + b, 0);
   if (total === 0) return null;
 

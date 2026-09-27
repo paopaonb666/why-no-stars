@@ -27,12 +27,15 @@ export function discoverabilityChecks(f) {
   );
 
   const lines = readme?.lineCount ?? 0;
+  const README_UNKNOWN = f.readmeState === 'unknown'
+    ? { en: 'README unavailable this run (API refused) — not counted against you.', zh: '本轮 README 不可用（API 拒绝）——不计入评分。' }
+    : null;
   out.push(
     check('readme-depth', 'discoverability', { en: 'README depth (50–1200 lines)', zh: 'README 篇幅（50–1200 行）' }, {
       status: readme === null ? 'skip' : lines >= 50 && lines <= 1200 ? 'pass' : lines >= 15 && lines <= 2500 ? 'warn' : 'fail',
       detail: readme
         ? { en: `${lines} lines`, zh: `${lines} 行` }
-        : { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' },
+        : (README_UNKNOWN ?? { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' }),
       fix: {
         en: lines < 50
           ? 'Too thin: add installation, quickstart, examples, FAQ, and a comparison table.'
@@ -52,7 +55,7 @@ export function discoverabilityChecks(f) {
       // No README at all is covered by readme-exists — don't double-punish.
       status: readme === null ? 'skip' : firstHeading ? (normalizeName(firstHeading.text).includes(nameNorm) ? 'pass' : 'warn') : 'warn',
       detail: readme === null
-        ? { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' }
+        ? (README_UNKNOWN ?? { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' })
         : firstHeading
           ? { en: `H${firstHeading.level}: “${firstHeading.text}”`, zh: `H${firstHeading.level}：「${firstHeading.text}」` }
           : { en: 'No top-level heading in README.', zh: 'README 顶层没有标题。' },

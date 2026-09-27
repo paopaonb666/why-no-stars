@@ -114,7 +114,9 @@ export function trustChecks(f) {
                 ? { en: 'Root file list unavailable (API refused) — test signals unverifiable; not counted against you.', zh: '根目录文件列表不可用（API 拒绝）——无法核验测试信号，不计入评分。' }
                 : pkgUnknown && f.hasManifest
                   ? { en: 'package.json could not be fetched (API refused) — test script unverifiable; not counted against you.', zh: 'package.json 未能获取（API 拒绝）——无法核验 test 脚本，不计入评分。' }
-                  : f.hasManifest
+                  : f.workflowsKnown === false
+                    ? { en: 'No test directory, config, or test script found (workflow data unavailable this run).', zh: '未找到测试目录、配置或 test 脚本（本次 workflow 数据不可用）。' }
+                    : f.hasManifest
                 ? { en: 'No test directory, config, test script, or test workflow found.', zh: '没有找到测试目录、测试配置、测试脚本或测试 workflow。' }
                 : {
                     en: 'No root-level test signals. Projects without a package manifest (kernel, native code) often keep tests in subdirectories this check can’t see.',

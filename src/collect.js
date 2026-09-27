@@ -84,6 +84,8 @@ export function parseReadme(text) {
       }
     }
   });
+  // GFM renders an unterminated fence to end-of-document — record it too.
+  if (inFence) codeBlocks.push({ start: fenceStart, end: lines.length });
 
   // Setext headings (Title\n=====) — used by the Linux kernel README. Skip
   // anything inside recorded code blocks, list items, and tables: a `---`

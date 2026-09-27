@@ -8,10 +8,17 @@ import { sanitize } from '../ansi.js';
 const cell = (s) =>
   sanitize(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 
-export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
+export function renderMarkdown({ facts, scorecard, benchmark, locale, stale = false }) {
   const f = facts;
   const zh = locale === 'zh';
   const out = [];
+
+  if (stale) {
+    out.push(zh
+      ? '> ⚠️ **数据非实时**：本次审计因限流使用了本地缓存数据生成，并非实时结果。'
+      : '> ⚠️ **STALE DATA**: this audit was rate-limited and rendered from cached data — not a live result.');
+    out.push('');
+  }
 
   out.push(zh ? `# 🩺 ${f.fullName} 体检报告` : `# 🩺 ${f.fullName} scorecard`);
   out.push('');

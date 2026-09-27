@@ -47,8 +47,8 @@ test('pillar scoring: warn counts as half, skip excluded', () => {
   assert.equal(trust.checks.length, 2);
 });
 
-test('overall is a weighted mean across pillars', () => {
-  // single pillar with weight 25 -> overall equals that pillar's score
+test('single evaluated pillar: overall equals that pillar score (others null)', () => {
+  // single pillar with weight 20 -> overall equals that pillar's score
   const checks = PILLARS.flatMap((p) =>
     p.id === 'quickstart' ? [mk('quickstart', 'fail')] : []
   );

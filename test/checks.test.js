@@ -242,7 +242,10 @@ const REACT_FIXTURE = new URL('./fixtures/react.json', import.meta.url);
 
 test('real-world fixture (facebook/react): mega-repo paths hold up on live data', { skip: !existsSync(REACT_FIXTURE) && 'fixture not recorded yet' }, () => {
   const payloads = JSON.parse(readFileSync(REACT_FIXTURE, 'utf8'));
-  const facts = buildFacts(payloads, { now: new Date() });
+  // Fixed date: the fixture's newest WatchEvent is 2026-09-27T13:06Z, so a
+  // moving clock would age the events out of the 28-day window ~Oct 25 and
+  // break this test with zero code changes.
+  const facts = buildFacts(payloads, { now: new Date('2026-09-27T00:00:00Z') });
   const checks = runChecks(facts);
   const sc = scoreChecks(checks);
   const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
@@ -471,4 +474,21 @@ test('a refused package.json skips the tests check for manifest repos', () => {
   const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'tests');
   assert.equal(c.status, 'skip');
   assert.match(c.detail.en, /test script unverifiable|package\.json could not be fetched/);
+});
+
+test('star-velocity: full history uses the 90-day window, not the lifetime average', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ stargazers_count: 100, created_at: '2025-01-01T00:00:00Z', pushed_at: '2026-09-20T00:00:00Z' });
+  // 100 stars (=> 'full' sample): star i happened (i*4 + 1) days before the fixed now.
+  // Within the last 90 days: i <= 22 -> 23 stars -> ~1.8/week (pass); the lifetime
+  // average over 91 weeks would be ~1.1/week — assert the WINDOW phrasing to pin it.
+  p.stargazers = Array.from({ length: 100 }, (_, i) => ({
+    starred_at: new Date(Date.parse('2026-09-27T00:00:00Z') - (i * 4 + 1) * 86400000).toISOString(),
+  }));
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  assert.equal(facts.starSample, 'full');
+  const c = runChecks(facts).find((x) => x.id === 'star-velocity');
+  assert.equal(c.status, 'pass');
+  assert.match(c.detail.en, /full history known/);
+  assert.match(c.detail.en, /23 star\(s\) in the last 90 days/);
 });
