@@ -65,7 +65,7 @@ npx github:paopaonb666/why-no-stars me/my-project --zh               # 中文报
 ```
 
 > **No API key needed.** Unauthenticated GitHub allows 60 requests/hour (~4 audits).
-> Set `GITHUB_TOKEN` for 5,000/hour: `GITHUB_TOKEN=ghp_xxx npx github:paopaonb666/why-no-stars me/my-project`.
+> Set `GITHUB_TOKEN` for 5,000/hour: `GITHUB_TOKEN=<your-token> npx github:paopaonb666/why-no-stars me/my-project`.
 > First-ever run downloads the tool (~30s of npm fetching); every run after that is fast.
 
 ## What it measures — six pillars

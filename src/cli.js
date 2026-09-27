@@ -38,7 +38,6 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
 
 运行方式:
   npx github:paopaonb666/why-no-stars <owner/repo>
-  npm i -g why-no-stars && wns <owner/repo>     # 发布到 npm 后可用
 
 示例:
   wns sindresorhus/got
@@ -69,7 +68,6 @@ Options:
 
 How to run:
   npx github:paopaonb666/why-no-stars <owner/repo>
-  npm i -g why-no-stars && wns <owner/repo>     # once published to npm
 
 Examples:
   wns sindresorhus/got

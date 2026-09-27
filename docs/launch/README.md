@@ -14,18 +14,9 @@
 
 > 需要登录 GitHub；本仓库无登录会话，此步必须本人完成。
 
-### 1. npm 发布（⚠️ 当前被网络封锁阻塞，替代方案已上线）
+### 1. npm 渠道（暂缓）
 
-```bash
-npm login        # www.npmjs.com 被 DataDome IP 黑名单封锁，registry 正常
-npm publish      # 账号建好后：registry 直连可用，5 分钟完成
-```
-
-**当前状态（2026-09-27 晚）**：www.npmjs.com 对本机全部网络出口（家宽 183.210.x / 移动 223.104.x / 代理 203.198.x）均返回 DataDome 硬封锁，验证码 CDN（captcha-delivery.com）从国内亦不可达，legacy 注册 API 已被 npm 关闭——三重锁。
-
-**已上线的替代方案**：v1.1.1 通过 GitHub Actions（内置 GITHUB_TOKEN，零额外凭据）自动发布到 **GitHub Packages**：`@paopaonb666/why-no-stars`。主安装路径 `npx github:paopaonb666/why-no-stars` 不受任何影响。
-
-**npmjs 后续发布**：等干净网络注册账号后，把 NPM_TOKEN 加入仓库 Secrets，在 publish.yml 加一个 npmjs job 即可自动发布——完全绕开本机网络。
+npmjs.com 注册暂不可用，包已通过 GitHub Actions 自动发布到 GitHub Packages（`@paopaonb666/why-no-stars`）。主安装路径 `npx github:paopaonb666/why-no-stars` 不受影响。
 
 ### 2. V2EX 分享创造（3 分钟）→ [v2ex.md](./v2ex.md)
 
