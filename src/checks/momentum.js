@@ -35,13 +35,28 @@ export function momentumChecks(f) {
   );
 
   const ageWeeks = f.createdAt ? Math.max(1, (now - new Date(f.createdAt)) / (7 * DAY)) : null;
-  const perWeek = ageWeeks ? f.stars / ageWeeks : null;
+  // A lifetime average lets a once-viral dead repo pass forever. When the full
+  // history is known, prefer the last-90-day window; lifetime is the fallback.
+  let velocity = null;
+  let velocityDetail = null;
+  if (f.starSample === 'full' && ts.length > 0) {
+    const recent90 = ts.filter((t) => now - new Date(t) <= 90 * DAY).length;
+    velocity = recent90 / (90 / 7);
+    velocityDetail = {
+      en: `${recent90} star(s) in the last 90 days ≈ ${velocity.toFixed(1)}/week (full history known).`,
+      zh: `最近 90 天新增 ${recent90} 颗 star ≈ 每周 ${velocity.toFixed(1)} 颗（全量历史）。`,
+    };
+  } else if (ageWeeks) {
+    velocity = f.stars / ageWeeks;
+    velocityDetail = {
+      en: `${velocity.toFixed(1)} stars/week over ${Math.round(ageWeeks)} weeks (lifetime average).`,
+      zh: `${Math.round(ageWeeks)} 周平均每周 ${velocity.toFixed(1)} 颗 star（终生均值）。`,
+    };
+  }
   out.push(
-    check('star-velocity', 'momentum', { en: 'Stars per week since creation', zh: '建库以来平均每周 star' }, {
-      status: perWeek === null ? 'skip' : perWeek >= 1 ? 'pass' : perWeek >= 0.2 ? 'warn' : 'fail',
-      detail: perWeek !== null
-        ? { en: `${perWeek.toFixed(1)} stars/week over ${Math.round(ageWeeks)} weeks.`, zh: `${Math.round(ageWeeks)} 周平均每周 ${perWeek.toFixed(1)} 颗 star。` }
-        : { en: 'Creation date unknown.', zh: '创建时间未知。' },
+    check('star-velocity', 'momentum', { en: 'Stars per week (recent)', zh: '近期每周 star' }, {
+      status: velocity === null ? 'skip' : velocity >= 1 ? 'pass' : velocity >= 0.2 ? 'warn' : 'fail',
+      detail: velocityDetail ?? { en: 'Creation date unknown.', zh: '创建时间未知。' },
       fix: {
         en: 'If velocity is near zero, treat the README as a landing page and re-launch the project (rename, rewrite the pitch, post again).',
         zh: '如果增速接近零，把 README 当成落地页来改，然后重新发布一次项目（改名、重写简介、再发一轮）。',

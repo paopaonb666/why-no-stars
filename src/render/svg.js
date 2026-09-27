@@ -49,6 +49,12 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
     benchLine = zh
       ? `生态分位：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
       : `Ecosystem: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`;
+    if (f.stars <= 9 && benchmark.share0 > 50) {
+      const ml = T(benchmark.medianLabel, locale);
+      benchLine += zh
+        ? ` · ${(benchmark.share0).toFixed(0)}% 的同类仓库为 0 star，中位数仓库：${ml}`
+        : ` · ${(benchmark.share0).toFixed(0)}% of peers have 0 stars; median peer: ${ml}`;
+    }
   } else {
     benchLine = zh
       ? `${scorecard.stats.passed}/${scorecard.stats.total} 项检查通过`
@@ -74,7 +80,7 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   <circle cx="90" cy="610" r="190" fill="#58a6ff" opacity="0.05"/>
 
   <text x="90" y="84" font-family="${FONT}" font-size="40" font-weight="700" fill="#e6edf3">${esc(f.fullName)}</text>
-  <text x="90" y="124" font-family="${FONT}" font-size="22" fill="#8b949e">★ ${fmtNum(f.stars)}   ·   ${esc(f.language ?? '?')}   ·   ${esc(gradeLabel)}</text>
+  <text x="90" y="124" font-family="${FONT}" font-size="22" fill="#8b949e">★ ${fmtNum(f.stars)}   ·   ${esc(f.language ?? '?')}   ·   ${esc(gradeLabel)}${f.isArchived ? '   ·   ARCHIVED' : ''}${f.isFork ? '   ·   FORK' : ''}</text>
   <text x="90" y="166" font-family="${FONT}" font-size="20" fill="#58a6ff">${esc(benchLine)}</text>
 
   <text x="90" y="300" font-family="${FONT}" font-size="110" font-weight="800" fill="${accent}">${scorecard.overall}</text>

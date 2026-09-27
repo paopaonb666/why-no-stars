@@ -1,5 +1,5 @@
 // Markdown report renderer (for pasting into issues / PRs / discussions).
-import { T, fmtTopEn, fmtTopZh } from './terminal.js';
+import { T, fmtNum, fmtTopEn, fmtTopZh } from './terminal.js';
 
 // Pipe a cell's content so it can't break out of the table structure.
 const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
@@ -13,8 +13,8 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
   out.push('');
   out.push(
     zh
-      ? `**总分 ${scorecard.overall}/100（${scorecard.grade}）** · ★ ${f.stars} · ${f.language ?? '?'}`
-      : `**Overall ${scorecard.overall}/100 (${scorecard.grade})** · ★ ${f.stars} · ${f.language ?? '?'}`
+      ? `**总分 ${scorecard.overall}/100（${scorecard.grade}）** · ★ ${fmtNum(f.stars)} · ${f.language ?? '?'}${f.isArchived ? ' · 已归档' : ''}${f.isFork ? ' · fork' : ''}`
+      : `**Overall ${scorecard.overall}/100 (${scorecard.grade})** · ★ ${fmtNum(f.stars)} · ${f.language ?? '?'}${f.isArchived ? ' · archived' : ''}${f.isFork ? ' · fork' : ''}`
   );
   if (benchmark) {
     out.push(

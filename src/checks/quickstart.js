@@ -7,10 +7,12 @@ export function quickstartChecks(f) {
 
   out.push(
     check('install-oneliner', 'quickstart', { en: 'Copy-paste install command', zh: '可复制的安装命令' }, {
-      status: readme?.installLine ? 'pass' : 'fail',
-      detail: readme?.installLine
-        ? { en: `Found at README line ${readme.installLine}`, zh: `在 README 第 ${readme.installLine} 行找到` }
-        : { en: 'No npm/pip/cargo/brew/docker style install command found in the README.', zh: 'README 中没有找到 npm/pip/cargo/brew/docker 风格的安装命令。' },
+      status: readme === null ? 'skip' : readme.installLine ? 'pass' : 'fail',
+      detail: readme === null
+        ? { en: 'No README to inspect — covered by the README check.', zh: '没有 README 可检查——已由「README 存在」检查覆盖。' }
+        : readme.installLine
+          ? { en: `Found at README line ${readme.installLine}`, zh: `在 README 第 ${readme.installLine} 行找到` }
+          : { en: 'No npm/pip/cargo/brew/docker style install command found in the README.', zh: 'README 中没有找到 npm/pip/cargo/brew/docker 风格的安装命令。' },
       fix: {
         en: 'Add an obvious one-liner: `npm i your-pkg` / `pip install your-pkg` / `cargo add ...`. This single line is the #1 conversion lever.',
         zh: '加一条显眼的一行命令：`npm i 包名` / `pip install 包名` / `cargo add ...`。这一行是转化率的第一杠杆。',
@@ -22,10 +24,12 @@ export function quickstartChecks(f) {
   const firstCode = readme?.codeBlocks?.length ? readme.codeBlocks[0].start : null;
   out.push(
     check('quickstart-code', 'quickstart', { en: 'Quickstart code block', zh: '快速上手代码块' }, {
-      status: firstCode === null ? 'fail' : firstCode <= 120 ? 'pass' : 'warn',
-      detail: firstCode
-        ? { en: `First code block at line ${firstCode}`, zh: `第一个代码块在第 ${firstCode} 行` }
-        : { en: 'No fenced code block in the README.', zh: 'README 里没有围栏代码块。' },
+      status: readme === null ? 'skip' : firstCode === null ? 'fail' : firstCode <= 120 ? 'pass' : 'warn',
+      detail: readme === null
+        ? { en: 'No README to inspect — covered by the README check.', zh: '没有 README 可检查——已由「README 存在」检查覆盖。' }
+        : firstCode
+          ? { en: `First code block at line ${firstCode}`, zh: `第一个代码块在第 ${firstCode} 行` }
+          : { en: 'No fenced code block in the README.', zh: 'README 里没有围栏代码块。' },
       fix: {
         en: 'Add a “Quick start” section with a runnable snippet near the top — show the happy path in < 10 lines.',
         zh: '在靠前位置加一个「快速开始」小节，放一段能跑的最小示例——10 行以内展示 happy path。',

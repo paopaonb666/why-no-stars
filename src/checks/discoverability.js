@@ -29,10 +29,10 @@ export function discoverabilityChecks(f) {
   const lines = readme?.lineCount ?? 0;
   out.push(
     check('readme-depth', 'discoverability', { en: 'README depth (50–1200 lines)', zh: 'README 篇幅（50–1200 行）' }, {
-      status: readme === null ? 'fail' : lines >= 50 && lines <= 1200 ? 'pass' : lines >= 15 ? 'warn' : 'fail',
+      status: readme === null ? 'skip' : lines >= 50 && lines <= 1200 ? 'pass' : lines >= 15 && lines <= 2500 ? 'warn' : 'fail',
       detail: readme
         ? { en: `${lines} lines`, zh: `${lines} 行` }
-        : { en: 'No README.', zh: '没有 README。' },
+        : { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' },
       fix: {
         en: lines < 50
           ? 'Too thin: add installation, quickstart, examples, FAQ, and a comparison table.'

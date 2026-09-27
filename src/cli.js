@@ -60,7 +60,7 @@ Options:
   --en             output in English
   --lang <lang>    override the detected primary language (for benchmarking)
   --token <token>  GitHub token (defaults to GITHUB_TOKEN / GH_TOKEN env)
-  --no-benchmark   skip the ecosystem percentile (saves 6 API calls)
+  --no-benchmark   skip the ecosystem percentile (saves 7 API calls)
   --quiet          print a single summary line
   --color          force colored output
   --no-color       disable colored output
@@ -215,11 +215,11 @@ export async function main(argv) {
 
   say(zh ? '→ 正在体检并评分 …' : '→ running checks and scoring …');
   const checks = runChecks(facts);
-  const scorecard = scoreChecks(checks);
+  const scorecard = scoreChecks(checks, { isArchived: facts.isArchived });
 
   let benchmark = null;
   if (!opts.noBenchmark) {
-    say(zh ? '→ 正在统计同类生态分布（6 次 API 调用）…' : '→ benchmarking against the language ecosystem (6 API calls) …');
+    say(zh ? '→ 正在统计同类生态分布（7 次 API 调用）…' : '→ benchmarking against the language ecosystem (7 API calls) …');
     benchmark = await starPercentile(client, { stars: facts.stars, language: facts.language });
     if (!benchmark) {
       console.error(

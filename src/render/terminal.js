@@ -35,11 +35,19 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
 
   push(bold('why-no-stars') + gray(' · ') + bold(T({ en: 'Repo Scorecard', zh: '仓库体检报告' }, locale)));
   push(gray('─'.repeat(64)));
+  const tags = [
+    f.isArchived ? red(T({ en: 'ARCHIVED', zh: '已归档' }, locale)) : null,
+    f.isFork ? yellow(T({ en: 'FORK', zh: 'FORK' }, locale)) : null,
+  ].filter(Boolean);
   push(
     bold(f.fullName) +
       gray(`  ★ ${fmtNum(f.stars)}  ·  ${f.language ?? '?'}  ·  `) +
-      T({ en: 'pushed ', zh: '最近提交 ' }, locale) + gray(relativeDays(f.pushedAt, f.now, locale))
+      T({ en: 'pushed ', zh: '最近提交 ' }, locale) + gray(relativeDays(f.pushedAt, f.now, locale)) +
+      (tags.length ? gray('  ·  ') + tags.join(gray(' · ')) : '')
   );
+  if (f.isArchived) {
+    push(gray(T({ en: '  Archived repo: scores measure presentation only; fixes that require pushing are omitted.', zh: '  已归档仓库：分数仅衡量页面呈现；需要推送代码的修复建议已省略。' }, locale)));
+  }
   push();
 
   // Overall + percentile
@@ -54,6 +62,14 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
       (locale === 'zh'
         ? `生态分位：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
         : `Ecosystem: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`);
+    // The 0-bucket swamps the range for tiny repos; give them the context the
+    // range alone can't carry.
+    if (f.stars <= 9 && benchmark.share0 > 50) {
+      const ml = T(benchmark.medianLabel, locale);
+      line2 += locale === 'zh'
+        ? gray(`  ·  ${(benchmark.share0).toFixed(0)}% 的同类仓库为 0 star，中位数仓库：${ml}`)
+        : gray(`  ·  ${(benchmark.share0).toFixed(0)}% of peers have 0 stars; median peer: ${ml}`);
+    }
   }
   push(line1);
   if (line2) push(gray(line2));
@@ -71,7 +87,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
       '  ' +
         padEnd(label, nameWidth) +
         '  ' + c(bar(p.score)) + '  ' +
-        padStart(String(p.score), 3) + gray(`  (w ${p.weight})`)
+        padStart(String(p.score), 3) + gray(`  (w ${p.weight} · ${p.checks.length} ${T({ en: 'checks', zh: '项' }, locale)})`)
     );
   }
   push();

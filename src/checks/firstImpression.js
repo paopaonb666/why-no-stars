@@ -67,16 +67,20 @@ export function firstImpressionChecks(f) {
     })
   );
 
-  const firstImage = f.readme.images.length ? f.readme.images[0].line : null;
+  // A badge is not a hero image: exclude badge-like URLs when picking the
+  // first real visual (react's license badge sits inside its H1).
+  const firstRealImage = (f.readme.images.filter((im) => !im.badge)[0])?.line ?? null;
   out.push(
     check('hero-visual', 'first-impression', { en: 'Hero image / GIF above the fold', zh: '首屏有截图 / GIF / Demo 图' }, {
-      status: firstImage === null ? 'fail' : firstImage <= 40 ? 'pass' : firstImage <= 100 ? 'warn' : 'fail',
-      detail: firstImage
-        ? { en: `First image at line ${firstImage}`, zh: `第一张图片在第 ${firstImage} 行` }
-        : { en: 'No image in the README at all.', zh: '整个 README 没有一张图片。' },
+      status: firstRealImage === null ? 'fail' : firstRealImage <= 60 ? 'pass' : firstRealImage <= 120 ? 'warn' : 'fail',
+      detail: firstRealImage
+        ? { en: `First non-badge image at line ${firstRealImage}`, zh: `第一张非徽章图片在第 ${firstRealImage} 行` }
+        : f.readme.images.length
+          ? { en: 'Only badge images found — no real screenshot/demo/hero.', zh: '只有徽章类图片——没有真正的截图 / demo / 主视觉。' }
+          : { en: 'No image in the README at all.', zh: '整个 README 没有一张图片。' },
       fix: {
-        en: 'Put a screenshot/GIF/demo within the first ~30 lines. Visitors decide in seconds; text alone rarely converts.',
-        zh: '把截图 / GIF / demo 图放到 README 前 ~30 行。访客只给你几秒钟，纯文字几乎不会转化。',
+        en: 'Put a screenshot/GIF/demo within the first ~40 lines. Visitors decide in seconds; text alone rarely converts.',
+        zh: '把截图 / GIF / demo 图放到 README 前 ~40 行。访客只给你几秒钟，纯文字几乎不会转化。',
       },
       impact: 'high',
     })
@@ -116,7 +120,7 @@ export function firstImpressionChecks(f) {
 
   const name = f.name ?? '';
   const nameOk = /^[a-zA-Z0-9][a-zA-Z0-9._-]{2,23}$/.test(name) &&
-    !/^(test|demo|tmp|temp|new|my|untitled|foo|asdf)/i.test(name);
+    !/^(test|demo|tmp|temp|new|my|untitled|foo|asdf)([-_.].+)?$/i.test(name);
   out.push(
     check('name-quality', 'first-impression', { en: 'Repo name quality', zh: '仓库名质量' }, {
       status: nameOk ? 'pass' : 'warn',

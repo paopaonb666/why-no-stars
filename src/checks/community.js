@@ -7,10 +7,12 @@ export function communityChecks(f) {
 
   out.push(
     check('issue-template', 'community', { en: 'Issue template', zh: 'Issue 模板' }, {
-      status: files.issue_template ? 'pass' : 'warn',
+      status: files.issue_template || f.issueTemplateKnown ? 'pass' : 'warn',
       detail: files.issue_template
         ? { en: `Found: ${files.issue_template}`, zh: `找到：${files.issue_template}` }
-        : { en: 'No issue template.', zh: '没有 issue 模板。' },
+        : f.issueTemplateKnown
+          ? { en: 'Found in .github/ISSUE_TEMPLATE (not surfaced by the community profile).', zh: '在 .github/ISSUE_TEMPLATE 中找到（community profile 未收录）。' }
+          : { en: 'No issue template.', zh: '没有 issue 模板。' },
       fix: {
         en: 'Add .github/ISSUE_TEMPLATE with bug + feature forms. Triage cost drops, signal rises.',
         zh: '加 .github/ISSUE_TEMPLATE（bug + feature 表单）。筛选成本下降，有效信号上升。',
@@ -71,10 +73,12 @@ export function communityChecks(f) {
 
   out.push(
     check('security-policy', 'community', { en: 'Security policy', zh: '安全披露政策' }, {
-      status: files.security_policy ? 'pass' : 'warn',
+      status: files.security_policy || f.securityPolicyKnown ? 'pass' : 'warn',
       detail: files.security_policy
         ? { en: `Found: ${files.security_policy}`, zh: `找到：${files.security_policy}` }
-        : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },
+        : f.securityPolicyKnown
+          ? { en: 'Found SECURITY.md (not surfaced by the community profile).', zh: '找到 SECURITY.md（community profile 未收录）。' }
+          : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },
       fix: {
         en: 'Add SECURITY.md describing how to report vulnerabilities privately (GitHub: Settings → Security → private vulnerability reporting).',
         zh: '加 SECURITY.md，说明如何私密上报漏洞（GitHub 后台：Settings → Security → 开启私密漏洞报告）。',

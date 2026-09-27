@@ -3,7 +3,7 @@
     "fullName": "paopaonb666/why-no-stars",
     "stars": 0,
     "language": "JavaScript",
-    "description": "Find out exactly why your repo isn't getting stars. 31 evidence-backed checks, ecosystem benchmark, shareable scorecard.",
+    "description": "Find out exactly why your repo isn't getting stars. 32 evidence-backed checks, ecosystem benchmark, shareable scorecard.",
     "topics": [
       "audit",
       "cli",
@@ -18,23 +18,24 @@
       "scorecard",
       "stars"
     ],
-    "pushedAt": "2026-09-27T06:58:55Z"
+    "pushedAt": "2026-09-27T07:53:50Z"
   },
-  "overall": 84,
+  "overall": 85,
   "grade": "A",
   "benchmark": {
     "lowerPct": 0,
     "upperPct": 90.03,
     "buckets": [
-      42832844,
-      4393685,
-      291800,
-      49019,
+      42834185,
+      3696495,
+      697374,
+      291803,
+      49017,
       7048,
       677
     ],
     "peerLanguage": "JavaScript",
-    "totalPeers": 47575073
+    "totalPeers": 47576599
   },
   "pillars": [
     {
@@ -58,7 +59,7 @@
     {
       "id": "community",
       "name": "Community health",
-      "score": 90,
+      "score": 100,
       "weight": 15
     },
     {
@@ -81,7 +82,7 @@
       "title": "Repo description",
       "status": "pass",
       "impact": "high",
-      "detail": "“Find out exactly why your repo isn't getting stars. 31 evidence-backed checks, ecosystem benchmark, shareable scorecard.” (120 chars)",
+      "detail": "“Find out exactly why your repo isn't getting stars. 32 evidence-backed checks, ecosystem benchmark, shareable scorecard.” (120 chars)",
       "fix": "Write a 15–130 char description: what it does + for whom + the differentiator."
     },
     {
@@ -108,7 +109,7 @@
       "title": "README exists",
       "status": "pass",
       "impact": "low",
-      "detail": "184 lines",
+      "detail": "195 lines",
       "fix": ""
     },
     {
@@ -117,8 +118,8 @@
       "title": "Hero image / GIF above the fold",
       "status": "pass",
       "impact": "high",
-      "detail": "First image at line 10",
-      "fix": "Put a screenshot/GIF/demo within the first ~30 lines. Visitors decide in seconds; text alone rarely converts."
+      "detail": "First non-badge image at line 16",
+      "fix": "Put a screenshot/GIF/demo within the first ~40 lines. Visitors decide in seconds; text alone rarely converts."
     },
     {
       "id": "install-above-fold",
@@ -198,8 +199,8 @@
       "title": "License",
       "status": "pass",
       "impact": "high",
-      "detail": "MIT License",
-      "fix": "Add a LICENSE (MIT/Apache-2.0). No license = legally unusable = nobody stars or adopts it."
+      "detail": "MIT (license file present).",
+      "fix": "Name the license in the README (e.g. “Licensed under GPL-2.0”) so adopters don’t have to guess."
     },
     {
       "id": "tests",
@@ -208,7 +209,7 @@
       "status": "pass",
       "impact": "high",
       "detail": "Found a test directory at the root.",
-      "fix": "Add even a minimal test suite + make it visible (tests/ dir, test script, CI badge). Tests are the strongest trust signal."
+      "fix": "Make existing tests discoverable: a root-level tests/ dir or test-runner config, and a CI badge."
     },
     {
       "id": "ci",
@@ -216,7 +217,7 @@
       "title": "CI configured",
       "status": "pass",
       "impact": "medium",
-      "detail": "1 GitHub Actions workflow(s).",
+      "detail": "2 GitHub Actions workflow(s).",
       "fix": "Add a CI workflow (build + test) and show its badge at the top of the README."
     },
     {
@@ -234,7 +235,7 @@
       "title": "Releases / tags",
       "status": "pass",
       "impact": "medium",
-      "detail": "1 release(s), latest “v1.0.0”.",
+      "detail": "2 release(s), latest “v1.0.1”.",
       "fix": "Publish a GitHub Release with readable notes. Releases trigger watcher emails and look maintained."
     },
     {
@@ -252,16 +253,16 @@
       "title": "Semver tags",
       "status": "pass",
       "impact": "low",
-      "detail": "1/1 tags are semver-shaped.",
-      "fix": "Tag versions as v1.2.3. Semver communicates stability to humans and package managers."
+      "detail": "2/2 tags are version-shaped (X.Y or X.Y.Z).",
+      "fix": "Tag versions as v1.2 (or v1.2.3). Consistent version tags communicate stability to humans and package managers."
     },
     {
       "id": "issue-template",
       "pillar": "community",
       "title": "Issue template",
-      "status": "warn",
+      "status": "pass",
       "impact": "medium",
-      "detail": "No issue template.",
+      "detail": "Found in .github/ISSUE_TEMPLATE (not surfaced by the community profile).",
       "fix": "Add .github/ISSUE_TEMPLATE with bug + feature forms. Triage cost drops, signal rises."
     },
     {
@@ -301,6 +302,15 @@
       "fix": "Add a CODE_OF_CONDUCT.md (GitHub provides a template in one click)."
     },
     {
+      "id": "security-policy",
+      "pillar": "community",
+      "title": "Security policy",
+      "status": "pass",
+      "impact": "low",
+      "detail": "Found SECURITY.md (not surfaced by the community profile).",
+      "fix": "Add SECURITY.md describing how to report vulnerabilities privately (GitHub: Settings → Security → private vulnerability reporting)."
+    },
+    {
       "id": "not-fork-not-archived",
       "pillar": "discoverability",
       "title": "Not a fork / not archived",
@@ -315,7 +325,7 @@
       "title": "README depth (50–1200 lines)",
       "status": "pass",
       "impact": "medium",
-      "detail": "184 lines",
+      "detail": "195 lines",
       "fix": "Too long: move details into docs/ and keep the README to one screen of decision-making info."
     },
     {
@@ -348,13 +358,13 @@
     {
       "id": "star-velocity",
       "pillar": "momentum",
-      "title": "Stars per week since creation",
+      "title": "Stars per week (recent)",
       "status": "fail",
       "impact": "medium",
-      "detail": "0.0 stars/week over 1 weeks.",
+      "detail": "0.0 stars/week over 1 weeks (lifetime average).",
       "fix": "If velocity is near zero, treat the README as a landing page and re-launch the project (rename, rewrite the pitch, post again)."
     }
   ],
-  "generatedAt": "2026-09-27T07:07:17.105Z",
-  "tool": "why-no-stars v1.0.0"
+  "generatedAt": "2026-09-27T08:37:06.598Z",
+  "tool": "why-no-stars v1.0.1"
 }

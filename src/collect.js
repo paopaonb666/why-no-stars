@@ -20,7 +20,11 @@ export function findInstallLine(lines) {
 }
 
 export function parseReadme(text) {
-  const lines = text.split(/\r?\n/);
+  // Strip HTML comments but preserve newlines, so line numbers stay true.
+  // got's coverage badge hides in a comment — invisible to visitors, and
+  // previously counted as a "hero image".
+  const visible = text.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
+  const lines = visible.split(/\r?\n/);
   const headings = [];
   const images = [];
   const codeBlocks = [];
@@ -28,22 +32,30 @@ export function parseReadme(text) {
   let fenceStart = 0;
   let badges = 0;
 
+  const isBadgeUrl = (url) =>
+    /(badge|shields\.io|travis|circleci|codecov|coveralls|npmjs|pypi|crates\.io|goreportcard|deepwiki|packagephobia|badge\.fury)/i.test(url);
+
   lines.forEach((line, i) => {
     const n = i + 1;
     if (!inFence) {
+      // Markdown ATX headings and HTML <h1>-<h6> both render as headings.
       const h = line.match(/^(#{1,6})\s+(.*)$/);
       if (h) headings.push({ level: h[1].length, text: h[2].trim(), line: n });
-      // Images inside code fences are documentation of syntax, not rendered
-      // visuals — excluding them keeps hero-visual/badges honest.
+      const hHtml = line.match(/<h([1-6])[^>]*>(.*?)<\/h\1>/i);
+      if (hHtml) headings.push({ level: Number(hHtml[1]), text: hHtml[2].replace(/<[^>]*>/g, '').trim(), line: n });
+
+      // Markdown images and HTML <img> tags both render as visuals.
       for (const m of line.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)) {
         const url = m[1];
-        images.push({ url, line: n });
-        if (
-          n <= 45 &&
-          /(badge|shields\.io|travis|circleci|codecov|coveralls|npmjs|pypi|crates\.io|goreportcard|deepwiki)/i.test(url)
-        ) {
-          badges++;
-        }
+        const badge = isBadgeUrl(url);
+        images.push({ url, line: n, badge });
+        if (n <= 45 && badge) badges++;
+      }
+      for (const m of line.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
+        const url = m[1];
+        const badge = isBadgeUrl(url);
+        images.push({ url, line: n, badge });
+        if (n <= 45 && badge) badges++;
       }
     }
     if (/^(```|~~~)/.test(line.trim())) {
@@ -56,6 +68,19 @@ export function parseReadme(text) {
       }
     }
   });
+
+  // Setext headings (Title\n=====) — used by the Linux kernel README.
+  if (!inFence) {
+    for (let i = 0; i < lines.length - 1; i++) {
+      const t = lines[i].trim();
+      const u = lines[i + 1].trim();
+      if (t && !headings.some((h) => h.line === i + 1)) {
+        if (/^={2,}$/.test(u)) headings.push({ level: 1, text: t, line: i + 1 });
+        else if (/^-{2,}$/.test(u) && !/^[-*+]?\s*\[[ x]\]/i.test(t) && !t.startsWith('|')) headings.push({ level: 2, text: t, line: i + 1 });
+      }
+    }
+  }
+  headings.sort((a, b) => a.line - b.line);
 
   const installLine = findInstallLine(lines);
   return {
@@ -142,13 +167,15 @@ export function buildFacts(p, { now = new Date() } = {}) {
     hasManifest: rootFiles.some((f) => manifestNames.includes(f.name)),
     packageJson,
     workflows: p.workflows ?? { total_count: 0, workflows: [] },
-    tags: (p.tags ?? []).map((t) => t.name).filter(Boolean),
-    releases: (p.releases ?? []).map((r) => ({
-      name: r.name ?? r.tag_name,
-      tag: r.tag_name,
-      publishedAt: r.published_at,
-    })),
-    contributors: Array.isArray(p.contributors) ? p.contributors.length : 0,
+    // These three may be null when the API refused (e.g. contributor lists of
+    // very large repos 403). Null means "unknown", never "zero".
+    tags: Array.isArray(p.tags) ? p.tags.map((t) => t.name).filter(Boolean) : null,
+    releases: Array.isArray(p.releases)
+      ? p.releases.map((r) => ({ name: r.name ?? r.tag_name, tag: r.tag_name, publishedAt: r.published_at }))
+      : null,
+    contributors: Array.isArray(p.contributors) ? p.contributors.length : null,
+    issueTemplateKnown: p.issueTemplateProbe === 'known-present' || Array.isArray(p.issueTemplateProbe),
+    securityPolicyKnown: p.securityProbe === 'known-present' || p.securityProbe != null,
     stargazerTimestamps,
     starSample,
     recentStarEvents28,
@@ -200,16 +227,34 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     languages: ok(languages) ?? {},
     community: ok(community),
     contents: ok(contents) ?? [],
-    tags: ok(tags) ?? [],
-    releases: ok(releases) ?? [],
-    contributors: ok(contributors) ?? [],
+    tags: ok(tags),
+    releases: ok(releases),
+    contributors: ok(contributors),
     stargazers: ok(stargazers),
     events: ok(events),
     packageJson: ok(packageJson),
     readme: ok(readme),
     workflows: ok(workflows) ?? { total_count: 0, workflows: [] },
+    issueTemplateProbe: ok(community) && !ok(community)?.files?.issue_template
+      ? await probe(client, `/repos/${full}/contents/.github/ISSUE_TEMPLATE`)
+      : 'known-present',
+    securityProbe: ok(community) && !ok(community)?.files?.security_policy
+      ? await probe(client, `/repos/${full}/contents/SECURITY.md`)
+      : 'known-present',
     langOverride: langOverride ?? null,
   };
+}
+
+// The community-profile endpoint is known to lag reality (issue templates and
+// SECURITY.md missing from it for repos that have them). When it claims
+// absence, one cheap contents probe prevents a confident false claim.
+async function probe(client, path) {
+  try {
+    const r = await client.get(path);
+    return Array.isArray(r) ? r.map((f) => f.name) : r.name ?? true;
+  } catch {
+    return null; // 404 => genuinely absent; other errors => we don't claim either way
+  }
 }
 
 export async function collectFacts(client, owner, name, opts = {}) {

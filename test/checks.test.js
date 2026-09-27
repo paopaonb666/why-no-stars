@@ -112,6 +112,43 @@ test('images and badges inside code fences are not counted', () => {
   assert.equal(r.badges, 1);
 });
 
+test('parseReadme: HTML images/headings, HTML comments, setext titles', () => {
+  const md = [
+    '<div align="center">',
+    '<!-- hidden ![ghost](https://img.shields.io/badge/ghost-x) -->',
+    '<img src="media/logo.svg" width="300">',
+    '</div>',
+    '',
+    'The **Kernel**',
+    '============',
+    '',
+    '<h2>Usage</h2>',
+    '',
+    'body',
+  ].join('\n');
+  const r = parseReadme(md);
+  assert.equal(r.images.length, 1); // commented-out badge is invisible
+  assert.equal(r.images[0].badge, false);
+  assert.equal(r.badges, 0);
+  const l1 = r.headings.find((h) => h.level === 1);
+  assert.equal(l1.text, 'The **Kernel**'); // setext heading
+  assert.ok(r.headings.some((h) => h.level === 2 && h.text === 'Usage')); // HTML heading
+});
+
+test('hero-visual: badge-only images are not a hero', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ description: 'x'.repeat(20), topics: ['a', 'b', 'c'] });
+  p.readme = {
+    encoding: 'base64',
+    content: Buffer.from('# t\n\n![b](https://img.shields.io/badge/x-y)\n').toString('base64'),
+  };
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  const checks = runChecks(facts);
+  const c = checks.find((x) => x.id === 'hero-visual');
+  assert.equal(c.status, 'fail');
+  assert.match(c.detail.en, /[Bb]adge/);
+});
+
 test('findInstallLine supports many ecosystems', () => {
   assert.equal(findInstallLine(['pip install requests']), 1);
   assert.equal(findInstallLine(['$ cargo add foo']), 1);
