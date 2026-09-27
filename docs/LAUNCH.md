@@ -21,6 +21,8 @@ node bin.js paopaonb666/why-no-stars --svg examples/self-scorecard.svg --md docs
 
 ## Phase 2 — launch day (pick one day, do all of it)
 
+> **Ready-to-paste copy for every platform is in [docs/launch/](./launch/README.md) — titles, first comments, and per-platform checklists. Publish order and timing included.**
+
 Order matters: developer audiences first (forgiving, will file bug reports), general audiences later.
 
 | Channel | Angle | Note |
