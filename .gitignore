@@ -6,3 +6,5 @@ out/
 
 docs/launch/.v2ex-*.txt
 .npm-credentials-local.txt
+docs/launch/.juejin-*.txt
+docs/launch/.v2ex-*.txt
