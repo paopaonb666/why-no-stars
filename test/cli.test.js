@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, parseSlug, UsageError, main, nodeMajor } from '../src/cli.js';
+import { parseArgs, parseSlug, UsageError, main, nodeMajor, finalExitCode } from '../src/cli.js';
 
 test('parseSlug: URLs, .git suffix, trailing slashes, case', () => {
   assert.deepEqual(parseSlug('a/b'), { owner: 'a', name: 'b' });
@@ -40,4 +40,23 @@ test('nodeMajor: parses Node version strings for the runtime guard', () => {
   assert.equal(nodeMajor('24.14.1'), 24);
   assert.equal(nodeMajor('garbage'), 0);
   assert.equal(nodeMajor(''), 0);
+});
+
+test('parseArgs: --fail-under accepts integers 0-100 only', () => {
+  assert.equal(parseArgs(['a/b', '--fail-under', '70']).failUnder, 70);
+  assert.equal(parseArgs(['a/b', '--fail-under=85']).failUnder, 85);
+  assert.equal(parseArgs(['a/b', '--fail-under', '0']).failUnder, 0);
+  assert.throws(() => parseArgs(['a/b', '--fail-under', 'abc']), UsageError);
+  assert.throws(() => parseArgs(['a/b', '--fail-under', '101']), UsageError);
+  assert.throws(() => parseArgs(['a/b', '--fail-under', '-1']), UsageError);
+  assert.throws(() => parseArgs(['a/b', '--fail-under', '3.5']), UsageError);
+  assert.throws(() => parseArgs(['a/b', '--fail-under']), UsageError);
+});
+
+test('finalExitCode: write failure beats the CI gate; gate fires only when set', () => {
+  assert.equal(finalExitCode({ writeFailed: true, overall: 10, failUnder: 50 }), 1);
+  assert.equal(finalExitCode({ writeFailed: false, overall: 49, failUnder: 50 }), 10);
+  assert.equal(finalExitCode({ writeFailed: false, overall: 50, failUnder: 50 }), 0);
+  assert.equal(finalExitCode({ writeFailed: false, overall: 10, failUnder: null }), 0);
+  assert.equal(finalExitCode({ writeFailed: false, overall: null, failUnder: 50 }), 0);
 });

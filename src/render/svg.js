@@ -17,6 +17,33 @@ function colorFor(score) {
   return '#f85149';
 }
 
+// Rough width for the SVG font stack: CJK/fullwidth chars are one em, latin
+// ~0.56 em. Long repo names / benchmark lines shrink first, then truncate —
+// a shareable card must never overflow its 1200px canvas.
+export function fitText(text, maxWidth, baseSize, minSize = 14) {
+  const widthAt = (s, fs) =>
+    [...s].reduce((w, ch) => w + (ch.codePointAt(0) > 0xff ? fs : fs * 0.56), 0);
+  let size = baseSize;
+  if (widthAt(text, size) > maxWidth) {
+    size = Math.max(minSize, Math.floor(baseSize * (maxWidth / widthAt(text, baseSize))));
+  }
+  let out = text;
+  if (widthAt(out, size) > maxWidth) {
+    const chars = [...out];
+    const budget = maxWidth - size * 0.6; // reserve room for the ellipsis
+    let w = 0;
+    let keep = 0;
+    while (keep < chars.length) {
+      const cw = chars[keep].codePointAt(0) > 0xff ? size : size * 0.56;
+      if (w + cw > budget) break;
+      w += cw;
+      keep++;
+    }
+    out = chars.slice(0, Math.max(1, keep)).join('').trimEnd() + '…';
+  }
+  return { text: out, size };
+}
+
 export function renderSvg({ facts, scorecard, benchmark, locale }) {
   const f = facts;
   const W = 1200;
@@ -63,6 +90,10 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   }
 
   const gradeLabel = zh ? `评级 ${scorecard.grade}` : `Grade ${scorecard.grade}`;
+  const metaRaw = `★ ${fmtNum(f.stars)}   ·   ${f.language ?? '?'}   ·   ${gradeLabel}${f.isArchived ? '   ·   ARCHIVED' : ''}${f.isFork ? '   ·   FORK' : ''}`;
+  const nameFit = fitText(f.fullName, 1020, 40, 24);
+  const metaFit = fitText(metaRaw, 1020, 22, 14);
+  const benchFit = fitText(benchLine, 1020, 20, 14);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
@@ -80,9 +111,9 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   <circle cx="1120" cy="90" r="150" fill="${accent}" opacity="0.06"/>
   <circle cx="90" cy="610" r="190" fill="#58a6ff" opacity="0.05"/>
 
-  <text x="90" y="84" font-family="${FONT}" font-size="40" font-weight="700" fill="#e6edf3">${esc(f.fullName)}</text>
-  <text x="90" y="124" font-family="${FONT}" font-size="22" fill="#8b949e">★ ${fmtNum(f.stars)}   ·   ${esc(f.language ?? '?')}   ·   ${esc(gradeLabel)}${f.isArchived ? '   ·   ARCHIVED' : ''}${f.isFork ? '   ·   FORK' : ''}</text>
-  <text x="90" y="166" font-family="${FONT}" font-size="20" fill="#58a6ff">${esc(benchLine)}</text>
+  <text x="90" y="84" font-family="${FONT}" font-size="${nameFit.size}" font-weight="700" fill="#e6edf3">${esc(nameFit.text)}</text>
+  <text x="90" y="124" font-family="${FONT}" font-size="${metaFit.size}" fill="#8b949e">${esc(metaFit.text)}</text>
+  <text x="90" y="166" font-family="${FONT}" font-size="${benchFit.size}" fill="#58a6ff">${esc(benchFit.text)}</text>
 
   <text x="90" y="300" font-family="${FONT}" font-size="110" font-weight="800" fill="${accent}">${scorecard.overall}</text>
   <text x="90" y="336" font-family="${FONT}" font-size="24" fill="#8b949e">/100 ${zh ? '总分' : 'overall'}</text>

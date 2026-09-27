@@ -33,6 +33,7 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   --token <token>  GitHub token（默认读 GITHUB_TOKEN / GH_TOKEN 环境变量）
   --no-benchmark   跳过生态分位对比（省 7 次 API 调用）
   --no-cache       跳过本地缓存与运行历史（仓库数据默认缓存 30 分钟）
+  --fail-under <n> 分数低于 <n> 时以退出码 10 结束（用于 CI 门禁）
   --quiet          只打印一行总分
   --color          强制彩色输出
   --no-color       禁用彩色输出
@@ -64,6 +65,7 @@ Options:
   --token <token>  GitHub token (defaults to GITHUB_TOKEN / GH_TOKEN env)
   --no-benchmark   skip the ecosystem percentile (saves 7 API calls)
   --no-cache       skip the on-disk cache and run history (repo data cached 30 min)
+  --fail-under <n> exit with code 10 when the score is below <n> (CI gate)
   --quiet          print a single summary line
   --color          force colored output
   --no-color       disable colored output
@@ -89,11 +91,20 @@ export function nodeMajor(ua = process.versions?.node) {
   return Number.isInteger(n) ? n : 0;
 }
 
+// Final exit code: hard failures (1) beat the CI gate (10), success is 0.
+// Distinct code 10 lets scripts tell "your repo scored too low" from
+// "the tool itself failed".
+export function finalExitCode({ writeFailed = false, overall = null, failUnder = null } = {}) {
+  if (writeFailed) return 1;
+  if (failUnder !== null && overall !== null && overall < failUnder) return 10;
+  return 0;
+}
+
 export function parseArgs(argv) {
   const opts = {
     slug: null, svg: null, json: null, md: null, lang: null, token: null,
     noBenchmark: false, noCache: false, quiet: false, color: null, help: false,
-    version: false, locale: null,
+    version: false, locale: null, failUnder: null,
   };
   const positional = [];
   const nextValue = (flag) => {
@@ -120,6 +131,15 @@ export function parseArgs(argv) {
       case '--en': opts.locale = 'en'; break;
       case '--no-benchmark': opts.noBenchmark = true; break;
       case '--no-cache': opts.noCache = true; break;
+      case '--fail-under': {
+        const v = inline ?? nextValue('--fail-under');
+        const n = Number(v);
+        if (!Number.isInteger(n) || n < 0 || n > 100) {
+          throw new UsageError(`--fail-under expects an integer 0–100, got ${JSON.stringify(v)}.`);
+        }
+        opts.failUnder = n;
+        break;
+      }
       case '--quiet': case '-q': opts.quiet = true; break;
       case '--color': opts.color = 'always'; break;
       case '--no-color': opts.color = 'never'; break;
@@ -355,5 +375,5 @@ export async function main(argv) {
     }), null, 2));
   }
 
-  return writeFailed ? 1 : 0;
+  return finalExitCode({ writeFailed, overall: scorecard.overall, failUnder: opts.failUnder });
 }

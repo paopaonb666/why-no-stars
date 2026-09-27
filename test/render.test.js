@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildFacts } from '../src/collect.js';
 import { runChecks } from '../src/checks/index.js';
 import { scoreChecks } from '../src/score.js';
-import { renderSvg } from '../src/render/svg.js';
+import { renderSvg, fitText } from '../src/render/svg.js';
 import { renderMarkdown } from '../src/render/markdown.js';
 import { renderTerminal } from '../src/render/terminal.js';
 import { setColorMode } from '../src/ansi.js';
@@ -107,4 +107,30 @@ test('repo-controlled escape sequences never reach the rendered reports', () => 
   }
   // the visible text survives (markdown shows evidence rows for every check)
   assert.ok(renderMarkdown(s).includes('A demo <repo> & more'));
+});
+
+test('fitText: shrinks, then truncates with an ellipsis; short text untouched', () => {
+  // short text: untouched at base size
+  assert.deepEqual(fitText('me/demo', 1020, 40, 24), { text: 'me/demo', size: 40 });
+  // absurdly long latin name: shrink to min, then truncate
+  const long = fitText('a'.repeat(120), 400, 40, 14);
+  assert.equal(long.size, 14);
+  assert.ok(long.text.endsWith('…'));
+  assert.ok(long.text.length < 120);
+  // CJK shrinks faster (full-width chars): 40 CJK chars are ~1600px at 40
+  const cjk = fitText('仓'.repeat(40), 800, 40, 20);
+  assert.ok(cjk.size < 40 || cjk.text.endsWith('…'));
+  assert.ok(cjk.size >= 20);
+});
+
+test('SVG: oversized repo names are fitted, never overflowing the card', () => {
+  const s = setup();
+  s.facts.fullName = `${'super-long-repo-name-'.repeat(8)}/x`;
+  const svg = renderSvg(s);
+  assert.ok(svg.includes('…')); // truncated rather than overflowing
+  assert.ok(!svg.includes(s.facts.fullName)); // full name not rendered raw
+  // normal names render at full size with no ellipsis
+  const normal = renderSvg(setup());
+  assert.ok(normal.includes('font-size="40"'));
+  assert.ok(!normal.includes('…'));
 });
