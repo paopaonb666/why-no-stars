@@ -1,5 +1,6 @@
 // Terminal scorecard renderer. CJK-width aware, color-aware.
 import { bold, dim, gray, green, yellow, red, cyan, padEnd, padStart, vwidth, useColor, sanitize } from '../ansi.js';
+import { fmtAge } from '../cache.js';
 
 export function T(x, lang) {
   if (x == null) return '';
@@ -30,7 +31,7 @@ function bar(score, width = 10) {
   return '█'.repeat(filled) + '░'.repeat(width - filled);
 }
 
-export function renderTerminal({ facts, scorecard, benchmark, locale }) {
+export function renderTerminal({ facts, scorecard, benchmark, locale, delta = null, stale = false }) {
   const f = facts;
   const out = [];
   const push = (line = '') => out.push(line);
@@ -49,6 +50,9 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
   );
   if (f.isArchived) {
     push(gray(T({ en: '  Archived repo: scores measure presentation only; fixes that require pushing are omitted.', zh: '  已归档仓库：分数仅衡量页面呈现；需要推送代码的修复建议已省略。' }, locale)));
+  }
+  if (stale) {
+    push(yellow(T({ en: '  ⚠ STALE DATA: rate-limited, so this report renders cached data — not a live audit.', zh: '  ⚠ 数据非实时：因限流改用本地缓存生成，本报告并非实时审计结果。' }, locale)));
   }
   push();
 
@@ -74,6 +78,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
     }
   }
   push(line1);
+  if (delta) push(gray(deltaLine(delta, scorecard.overall, locale)));
   if (line2) push(gray(line2));
   push();
 
@@ -160,6 +165,19 @@ export function fmtTopZh(b) {
   const lo = Math.floor(b.lowerPct);
   const hi = Math.min(100, Math.ceil(b.upperPct));
   return `star 数超过同类仓库的 ${lo}–${hi}%`;
+}
+
+// Run-over-run delta line: what the score did since the user's last audit.
+function deltaLine(delta, overall, locale) {
+  const zh = locale === 'zh';
+  const diff = overall - delta.previousOverall;
+  const ago = fmtAge(Date.now() - delta.previousAt, locale);
+  if (diff === 0) return zh ? `  · 与 ${ago}前的运行持平（${delta.previousOverall}）` : `  · unchanged vs your run ${ago} ago (${delta.previousOverall})`;
+  const arrow = diff > 0 ? '▲' : '▼';
+  const sign = diff > 0 ? `+${diff}` : `${diff}`;
+  return zh
+    ? `  ${arrow} ${sign} 分（${ago}前：${delta.previousOverall}）`
+    : `  ${arrow} ${sign} pts (your run ${ago} ago: ${delta.previousOverall})`;
 }
 
 function relativeDays(iso, now, locale = 'en') {

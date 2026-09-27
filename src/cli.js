@@ -2,14 +2,16 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError, ApiError } from './api.js';
-import { collectFacts } from './collect.js';
+import { fetchPayloads, buildFacts } from './collect.js';
 import { runChecks } from './checks/index.js';
 import { scoreChecks } from './score.js';
-import { starPercentile } from './benchmark.js';
-import { renderTerminal, T, fmtTopEn, fmtTopZh } from './render/terminal.js';
+import { starPercentile, percentileFromCounts } from './benchmark.js';
+import { renderTerminal, fmtTopEn, fmtTopZh } from './render/terminal.js';
 import { renderSvg } from './render/svg.js';
 import { renderMarkdown } from './render/markdown.js';
 import { setColorMode, dim } from './ansi.js';
+import { resolveCacheDir, readEntry, writeData, fmtAge, REPO_TTL_MS, SEARCH_TTL_MS } from './cache.js';
+import { buildJsonReport } from './report.js';
 
 const VERSION = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8')
@@ -30,6 +32,7 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   --lang <lang>    覆盖自动识别的主语言（用于生态分位对比）
   --token <token>  GitHub token（默认读 GITHUB_TOKEN / GH_TOKEN 环境变量）
   --no-benchmark   跳过生态分位对比（省 7 次 API 调用）
+  --no-cache       跳过本地缓存与运行历史（仓库数据默认缓存 30 分钟）
   --quiet          只打印一行总分
   --color          强制彩色输出
   --no-color       禁用彩色输出
@@ -60,6 +63,7 @@ Options:
   --lang <lang>    override the detected primary language (for benchmarking)
   --token <token>  GitHub token (defaults to GITHUB_TOKEN / GH_TOKEN env)
   --no-benchmark   skip the ecosystem percentile (saves 7 API calls)
+  --no-cache       skip the on-disk cache and run history (repo data cached 30 min)
   --quiet          print a single summary line
   --color          force colored output
   --no-color       disable colored output
@@ -88,8 +92,8 @@ export function nodeMajor(ua = process.versions?.node) {
 export function parseArgs(argv) {
   const opts = {
     slug: null, svg: null, json: null, md: null, lang: null, token: null,
-    noBenchmark: false, quiet: false, color: null, help: false, version: false,
-    locale: null,
+    noBenchmark: false, noCache: false, quiet: false, color: null, help: false,
+    version: false, locale: null,
   };
   const positional = [];
   const nextValue = (flag) => {
@@ -115,6 +119,7 @@ export function parseArgs(argv) {
       case '--zh': opts.locale = 'zh'; break;
       case '--en': opts.locale = 'en'; break;
       case '--no-benchmark': opts.noBenchmark = true; break;
+      case '--no-cache': opts.noCache = true; break;
       case '--quiet': case '-q': opts.quiet = true; break;
       case '--color': opts.color = 'always'; break;
       case '--no-color': opts.color = 'never'; break;
@@ -185,11 +190,8 @@ export async function main(argv) {
   const client = new GitHubClient({ token: opts.token });
   const say = (msg) => { if (!opts.quiet) console.error(dim(msg)); };
 
-  let facts;
-  try {
-    say(zh ? `→ 正在采集仓库数据：${slug.owner}/${slug.name} …` : `→ collecting repo data: ${slug.owner}/${slug.name} …`);
-    facts = await collectFacts(client, slug.owner, slug.name, { langOverride: opts.lang });
-  } catch (err) {
+  // Friendly exits for known collection failures; null = not ours to handle.
+  const collectErrorExit = (err) => {
     if (err instanceof RateLimitError) {
       console.error(
         zh
@@ -223,17 +225,57 @@ export async function main(argv) {
       return 1;
     }
     if (err instanceof ApiError) {
-      console.error(
-        zh ? `GitHub API 出错：${err.message}` : `GitHub API error: ${err.message}`
-      );
+      console.error(zh ? `GitHub API 出错：${err.message}` : `GitHub API error: ${err.message}`);
       return 1;
     }
-    throw err;
+    return null;
+  };
+
+  // Cache-first collection: repeat audits are fast, kind to the rate limit,
+  // and comparable against the previous run. A rate-limited fresh fetch falls
+  // back to stale cache (clearly flagged in the report) instead of dead-ending.
+  const cacheDir = opts.noCache ? null : resolveCacheDir();
+  const repoCacheFile = `repo-${slug.owner}--${slug.name}.json`;
+  const scoreCacheFile = `score-${slug.owner}--${slug.name}.json`;
+
+  let entry = cacheDir ? readEntry(cacheDir, repoCacheFile, { maxAgeMs: REPO_TTL_MS }) : null;
+  let stale = false;
+  if (entry) {
+    say(zh
+      ? `· 使用 ${fmtAge(Date.now() - entry.at, locale)}前缓存的仓库数据——加 --no-cache 强制重新采集。`
+      : `· using cached repo data (fetched ${fmtAge(Date.now() - entry.at, locale)} ago) — pass --no-cache to force fresh.`);
+  } else {
+    try {
+      say(zh ? `→ 正在采集仓库数据：${slug.owner}/${slug.name} …` : `→ collecting repo data: ${slug.owner}/${slug.name} …`);
+      const payloads = await fetchPayloads(client, slug.owner, slug.name, { langOverride: opts.lang });
+      if (cacheDir) writeData(cacheDir, repoCacheFile, payloads);
+      entry = { at: Date.now(), data: payloads };
+    } catch (err) {
+      const older = cacheDir ? readEntry(cacheDir, repoCacheFile) : null; // any age
+      if (err instanceof RateLimitError && older) {
+        stale = true;
+        console.error(dim(zh
+          ? `· 已限流——改用 ${fmtAge(Date.now() - older.at, locale)}前的缓存数据生成报告（非实时）。`
+          : `· rate limited — rendering cached data from ${fmtAge(Date.now() - older.at, locale)} ago (not live).`));
+        entry = older;
+      } else {
+        const code = collectErrorExit(err);
+        if (code === null) throw err;
+        return code;
+      }
+    }
   }
+  const facts = buildFacts(entry.data, { now: new Date() });
 
   say(zh ? '→ 正在体检并评分 …' : '→ running checks and scoring …');
   const checks = runChecks(facts);
   const scorecard = scoreChecks(checks, { isArchived: facts.isArchived });
+
+  // Run-over-run delta: read the previous scorecard before recording this one.
+  const previous = cacheDir ? readEntry(cacheDir, scoreCacheFile) : null;
+  const delta = previous && Number.isInteger(previous.data?.overall)
+    ? { previousOverall: previous.data.overall, previousGrade: previous.data.grade, previousAt: previous.at }
+    : null;
 
   // Heads-up before the benchmark burns calls the user may not have.
   if (!opts.noBenchmark && client.lastRemaining !== null && client.lastRemaining < 10) {
@@ -244,8 +286,18 @@ export async function main(argv) {
 
   let benchmark = null;
   if (!opts.noBenchmark) {
-    say(zh ? '→ 正在统计同类生态分布（7 次 API 调用）…' : '→ benchmarking against the language ecosystem (7 API calls) …');
-    benchmark = await starPercentile(client, { stars: facts.stars, language: facts.language });
+    const searchFile = `search-${encodeURIComponent(facts.language ?? 'all')}.json`;
+    const cachedSearch = cacheDir ? readEntry(cacheDir, searchFile, { maxAgeMs: SEARCH_TTL_MS }) : null;
+    if (Array.isArray(cachedSearch?.data?.counts)) {
+      benchmark = percentileFromCounts(cachedSearch.data.counts, { stars: facts.stars, language: facts.language });
+      say(zh
+        ? `· 生态分布来自 ${fmtAge(Date.now() - cachedSearch.at, locale)}前的缓存。`
+        : `· ecosystem counts from cache (${fmtAge(Date.now() - cachedSearch.at, locale)} old).`);
+    } else {
+      say(zh ? '→ 正在统计同类生态分布（7 次 API 调用）…' : '→ benchmarking against the language ecosystem (7 API calls) …');
+      benchmark = await starPercentile(client, { stars: facts.stars, language: facts.language });
+      if (benchmark && cacheDir) writeData(cacheDir, searchFile, { counts: benchmark.counts });
+    }
     if (!benchmark) {
       console.error(
         dim(zh
@@ -261,15 +313,25 @@ export async function main(argv) {
         ? ` · ${fmtTopZh(benchmark)}`
         : ` · ${fmtTopEn(benchmark)} of ${facts.language ?? 'GitHub'} peers`)
       : '';
-    console.log(`${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}`);
+    let deltaNote = '';
+    if (delta) {
+      const d = scorecard.overall - delta.previousOverall;
+      deltaNote = zh
+        ? (d === 0 ? '（与上次运行持平）' : `（较上次运行 ${d > 0 ? '▲+' : '▼'}${d}）`)
+        : ` (${d === 0 ? 'Δ0' : d > 0 ? `▲+${d}` : `▼${d}`} vs last run)`;
+    }
+    console.log(`${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}${deltaNote}`);
   } else {
-    console.log(renderTerminal({ facts, scorecard, benchmark, locale }));
+    console.log(renderTerminal({ facts, scorecard, benchmark, locale, delta, stale }));
     console.error(
       dim(zh
         ? `\n改完最值得做的几项，再跑一次——方法就这么多。`
         : `\nFix the top items, then run it again. That's the whole method.`)
     );
   }
+
+  // Record this run for the next delta (best-effort; --no-cache skips it).
+  if (cacheDir) writeData(cacheDir, scoreCacheFile, { overall: scorecard.overall, grade: scorecard.grade });
 
   // Per-file emit: a bad path in --md must not swallow the --svg output,
   // and a write failure must exit non-zero instead of dumping a stack.
@@ -288,28 +350,9 @@ export async function main(argv) {
   if (opts.svg) emit(opts.svg, renderSvg({ facts, scorecard, benchmark, locale }));
   if (opts.md) emit(opts.md, renderMarkdown({ facts, scorecard, benchmark, locale }));
   if (opts.json) {
-    emit(opts.json, JSON.stringify({
-      repo: {
-        fullName: facts.fullName, stars: facts.stars, language: facts.language,
-        description: facts.description, topics: facts.topics, pushedAt: facts.pushedAt,
-      },
-      overall: scorecard.overall,
-      grade: scorecard.grade,
-      benchmark: benchmark && {
-        lowerPct: Number(benchmark.lowerPct.toFixed(2)),
-        upperPct: Number(benchmark.upperPct.toFixed(2)),
-        buckets: benchmark.counts,
-        peerLanguage: facts.language,
-        totalPeers: benchmark.total,
-      },
-      pillars: scorecard.pillars.map((p) => ({ id: p.id, name: T(p.name, locale), score: p.score, weight: p.weight })),
-      checks: checks.map((c) => ({
-        id: c.id, pillar: c.pillar, title: T(c.title, locale), status: c.status,
-        impact: c.impact, detail: T(c.detail, locale), fix: T(c.fix, locale),
-      })),
-      generatedAt: new Date().toISOString(),
-      tool: `why-no-stars v${VERSION}`,
-    }, null, 2));
+    emit(opts.json, JSON.stringify(buildJsonReport({
+      facts, scorecard, benchmark, checks, version: VERSION, delta, stale, locale,
+    }), null, 2));
   }
 
   return writeFailed ? 1 : 0;

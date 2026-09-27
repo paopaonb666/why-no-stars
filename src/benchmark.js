@@ -17,21 +17,9 @@ export const BUCKETS = [
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// staggerMs is injectable so tests can run without the real 300ms pacing.
-export async function starPercentile(client, { stars, language, staggerMs = 300 }) {
-  const langQ = language ? `+language:${encodeURIComponent(language)}` : '';
-  const counts = [];
-  try {
-    for (const [i, b] of BUCKETS.entries()) {
-      if (i > 0 && staggerMs > 0) await sleep(staggerMs); // GitHub's search secondary rate limit fires on rapid bursts
-      const r = await client.getSearch(
-        `/search/repositories?q=${encodeURIComponent(b.q)}${langQ}&per_page=1`
-      );
-      counts.push(Number(r.total_count) || 0);
-    }
-  } catch {
-    return null; // search rate-limited or error: benchmark is best-effort
-  }
+// Pure rebuild of the benchmark shape from bucket counts (used live and when
+// the counts come from the cache).
+export function percentileFromCounts(counts, { stars, language }) {
   const pct = computePercentile(counts, stars);
   if (!pct) return null;
   // Median peer: the bucket where the cumulative share crosses 50%.
@@ -51,4 +39,22 @@ export async function starPercentile(client, { stars, language, staggerMs = 300 
     language: language ?? null,
     stars,
   };
+}
+
+// staggerMs is injectable so tests can run without the real 300ms pacing.
+export async function starPercentile(client, { stars, language, staggerMs = 300 }) {
+  const langQ = language ? `+language:${encodeURIComponent(language)}` : '';
+  const counts = [];
+  try {
+    for (const [i, b] of BUCKETS.entries()) {
+      if (i > 0 && staggerMs > 0) await sleep(staggerMs); // GitHub's search secondary rate limit fires on rapid bursts
+      const r = await client.getSearch(
+        `/search/repositories?q=${encodeURIComponent(b.q)}${langQ}&per_page=1`
+      );
+      counts.push(Number(r.total_count) || 0);
+    }
+  } catch {
+    return null; // search rate-limited or error: benchmark is best-effort
+  }
+  return percentileFromCounts(counts, { stars, language });
 }
