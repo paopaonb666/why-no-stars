@@ -4,7 +4,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  resolveCacheDir, readEntry, readData, writeData, fmtAge, REPO_TTL_MS, SEARCH_TTL_MS,
+  resolveCacheDir, readEntry, readData, writeData, fmtAge, createEtagStore,
+  REPO_TTL_MS, SEARCH_TTL_MS,
 } from '../src/cache.js';
 
 function tempDir() {
@@ -89,4 +90,21 @@ test('fmtAge renders human deltas in both locales', () => {
   assert.equal(fmtAge(3 * 3600000, 'zh'), '3 小时');
   assert.equal(fmtAge(5 * 24 * 3600000), '5 d');
   assert.equal(fmtAge(5 * 24 * 3600000, 'zh'), '5 天');
+});
+
+test('etag store: round-trip, no cross-key collisions, corrupt-safe', () => {
+  const dir = tempDir();
+  try {
+    const store = createEtagStore(dir);
+    assert.equal(store.get('/repos/a/b'), null);
+    store.put('/repos/a/b', '"e1"', { x: 1 });
+    store.put('/repos/a/b?per_page=30', '"e2"', [1, 2]);
+    assert.deepEqual(store.get('/repos/a/b'), { etag: '"e1"', data: { x: 1 } });
+    assert.deepEqual(store.get('/repos/a/b?per_page=30'), { etag: '"e2"', data: [1, 2] });
+    // overwrite on revalidation
+    store.put('/repos/a/b', '"e3"', { x: 2 });
+    assert.equal(store.get('/repos/a/b').etag, '"e3"');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

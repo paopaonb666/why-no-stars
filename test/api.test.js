@@ -209,3 +209,58 @@ test('sanitize: repo-controlled text cannot carry terminal escapes', () => {
   assert.equal(sanitize('a\u0000b\u0007c'), 'a b c'); // control chars -> space
   assert.equal(sanitize('plain 中文 text'), 'plain 中文 text');
 });
+
+function etagFetch() {
+  const state = { etag: '"abc123"', body: { value: 42 }, calls: 0 };
+  const fetchImpl = async (url, init = {}) => {
+    state.calls++;
+    if (init.headers['If-None-Match'] === state.etag) {
+      return { ok: false, status: 304, headers: { get: () => '5' }, json: async () => { throw new Error('304 must never be body-parsed'); } };
+    }
+    return { ok: true, status: 200, headers: { get: (k) => (k === 'etag' ? state.etag : null) }, json: async () => state.body };
+  };
+  fetchImpl.state = state;
+  return fetchImpl;
+}
+
+function memoryStore() {
+  const map = new Map();
+  return {
+    get: (k) => map.get(k) ?? null,
+    put: (k, etag, data) => map.set(k, { etag, data }),
+  };
+}
+
+test('client: etagStore revalidates (304) at zero quota cost', async () => {
+  const f = etagFetch();
+  const store = memoryStore();
+  assert.deepEqual(await new GitHubClient({ fetchImpl: f, etagStore: store }).get('/x'), { value: 42 });
+  assert.equal(f.state.calls, 1); // 200, etag stored
+  // a fresh client (simulated next run) revalidates: 304, stored body served
+  const c2 = new GitHubClient({ fetchImpl: f, etagStore: store });
+  assert.deepEqual(await c2.get('/x'), { value: 42 });
+  assert.equal(c2.conditionalHits, 1);
+  assert.equal(f.state.calls, 2);
+  // in-memory cache still short-circuits within one client
+  await c2.get('/x');
+  assert.equal(f.state.calls, 2);
+});
+
+test('client: changed resource returns fresh 200 and refreshes the etag', async () => {
+  const f = etagFetch();
+  const store = memoryStore();
+  await new GitHubClient({ fetchImpl: f, etagStore: store }).get('/x');
+  f.state.etag = '"new-etag"';
+  f.state.body = { value: 43 };
+  const c2 = new GitHubClient({ fetchImpl: f, etagStore: store });
+  assert.deepEqual(await c2.get('/x'), { value: 43 });
+  assert.equal(c2.conditionalHits, 0);
+  assert.deepEqual(store.get('/x').data, { value: 43 });
+});
+
+test('client: no etagStore -> no If-None-Match, plain behavior', async () => {
+  const f = etagFetch();
+  assert.deepEqual(await new GitHubClient({ fetchImpl: f }).get('/x'), { value: 42 });
+  assert.deepEqual(await new GitHubClient({ fetchImpl: f }).get('/x'), { value: 42 });
+  assert.equal(f.state.calls, 2); // two plain 200s, no 304 path
+});

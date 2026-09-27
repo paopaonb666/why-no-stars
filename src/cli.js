@@ -10,7 +10,7 @@ import { renderTerminal, fmtTopEn, fmtTopZh } from './render/terminal.js';
 import { renderSvg } from './render/svg.js';
 import { renderMarkdown } from './render/markdown.js';
 import { setColorMode, dim } from './ansi.js';
-import { resolveCacheDir, readEntry, writeData, fmtAge, REPO_TTL_MS, SEARCH_TTL_MS } from './cache.js';
+import { resolveCacheDir, createEtagStore, readEntry, writeData, fmtAge, REPO_TTL_MS, SEARCH_TTL_MS } from './cache.js';
 import { buildJsonReport } from './report.js';
 
 const VERSION = JSON.parse(
@@ -207,7 +207,12 @@ export async function main(argv) {
 
   if (opts.color) setColorMode(opts.color);
 
-  const client = new GitHubClient({ token: opts.token });
+  const cacheDir = opts.noCache ? null : resolveCacheDir();
+  const repoCacheFile = `repo-${slug.owner}--${slug.name}.json`;
+  const scoreCacheFile = `score-${slug.owner}--${slug.name}.json`;
+
+  // Conditional requests: past the TTL, revalidation (304) costs no quota.
+  const client = new GitHubClient({ token: opts.token, etagStore: cacheDir ? createEtagStore(cacheDir) : null });
   const say = (msg) => { if (!opts.quiet) console.error(dim(msg)); };
 
   // Friendly exits for known collection failures; null = not ours to handle.
@@ -254,10 +259,6 @@ export async function main(argv) {
   // Cache-first collection: repeat audits are fast, kind to the rate limit,
   // and comparable against the previous run. A rate-limited fresh fetch falls
   // back to stale cache (clearly flagged in the report) instead of dead-ending.
-  const cacheDir = opts.noCache ? null : resolveCacheDir();
-  const repoCacheFile = `repo-${slug.owner}--${slug.name}.json`;
-  const scoreCacheFile = `score-${slug.owner}--${slug.name}.json`;
-
   let entry = cacheDir ? readEntry(cacheDir, repoCacheFile, { maxAgeMs: REPO_TTL_MS }) : null;
   let stale = false;
   if (entry) {
@@ -270,6 +271,11 @@ export async function main(argv) {
       const payloads = await fetchPayloads(client, slug.owner, slug.name, { langOverride: opts.lang });
       if (cacheDir) writeData(cacheDir, repoCacheFile, payloads);
       entry = { at: Date.now(), data: payloads };
+      if (client.conditionalHits > 0) {
+        say(zh
+          ? `· ${client.conditionalHits} 个请求经 ETag 校验复用（304，不扣配额）。`
+          : `· ${client.conditionalHits} requests revalidated via ETag (304, no quota cost).`);
+      }
     } catch (err) {
       const older = cacheDir ? readEntry(cacheDir, repoCacheFile) : null; // any age
       if (err instanceof RateLimitError && older) {

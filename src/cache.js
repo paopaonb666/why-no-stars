@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, posix, win32 } from 'node:path';
 import { homedir } from 'node:os';
+import { createHash } from 'node:crypto';
 
 export const REPO_TTL_MS = 30 * 60 * 1000;      // repo payloads: fresh enough for "did my fix land?" loops
 export const SEARCH_TTL_MS = 24 * 60 * 60 * 1000; // ecosystem bucket counts: huge aggregates, change slowly
@@ -60,4 +61,36 @@ export function fmtAge(ms, locale = 'en') {
   const h = Math.round(min / 60);
   if (h < 48) return zh ? `${h} 小时` : `${h} h`;
   return zh ? `${Math.round(h / 24)} 天` : `${Math.round(h / 24)} d`;
+}
+
+// ETag store for conditional requests: GitHub answers 304 without charging
+// the rate limit, so audits past the TTL revalidate for (almost) free.
+// Entries carry no TTL — invalidation is server-driven (200 with a new etag,
+// or 404 when the resource is gone). Best-effort, like everything here.
+function hashKey(key) {
+  return createHash('sha1').update(key).digest('hex').slice(0, 20);
+}
+
+export function createEtagStore(dir) {
+  const sub = join(dir, 'etag');
+  const fileFor = (key) => join(sub, `${hashKey(key)}.json`);
+  return {
+    get(key) {
+      try {
+        const obj = JSON.parse(readFileSync(fileFor(key), 'utf8'));
+        if (typeof obj?.etag === 'string' && 'data' in obj) return obj;
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    put(key, etag, data) {
+      try {
+        mkdirSync(sub, { recursive: true });
+        writeFileSync(fileFor(key), JSON.stringify({ etag, data }), 'utf8');
+      } catch {
+        /* cache must never take an audit down */
+      }
+    },
+  };
 }

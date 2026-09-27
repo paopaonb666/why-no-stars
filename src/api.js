@@ -60,7 +60,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export class GitHubClient {
   constructor({
     token, baseUrl = 'https://api.github.com', fetchImpl = fetch,
-    timeoutMs = DEFAULT_TIMEOUT_MS, retryDelayMs = 400, retries = 1,
+    timeoutMs = DEFAULT_TIMEOUT_MS, retryDelayMs = 400, retries = 1, etagStore = null,
   } = {}) {
     this.token = token ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? null;
     this.baseUrl = baseUrl.replace(/\/+$/, '');
@@ -68,20 +68,25 @@ export class GitHubClient {
     this.timeoutMs = timeoutMs;
     this.retryDelayMs = retryDelayMs;
     this.retries = retries;
+    // Optional persistent etag store: revalidation (304) doesn't cost quota.
+    this.etagStore = etagStore;
     this.cache = new Map();
     this.lastRemaining = null;
+    this.conditionalHits = 0;
   }
 
   async get(path, { accept } = {}) {
     const key = accept ? `${path}|${accept}` : path;
     if (this.cache.has(key)) return this.cache.get(key);
 
+    const stored = this.etagStore?.get(key) ?? null;
     const headers = {
       Accept: accept ?? 'application/vnd.github+json',
       'User-Agent': 'why-no-stars',
       'X-GitHub-Api-Version': '2022-11-28',
     };
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
+    if (stored) headers['If-None-Match'] = stored.etag;
 
     // One retry for transient failures only — dead connections and 502/503/504
     // blips (common on long routes to api.github.com). 4xx never retries.
@@ -102,6 +107,13 @@ export class GitHubClient {
       const remaining = res.headers.get('x-ratelimit-remaining');
       if (remaining !== null) this.lastRemaining = Number(remaining);
 
+      if (res.status === 304 && stored) {
+        // Revalidated: the stored body is still the server's truth, at no
+        // quota cost.
+        this.conditionalHits++;
+        this.cache.set(key, stored.data);
+        return stored.data;
+      }
       if (res.status === 404) throw new NotFoundError(path);
       if (res.status === 401) throw new AuthError(path);
       if (res.status === 403 || res.status === 429) {
@@ -120,6 +132,8 @@ export class GitHubClient {
       if (!res.ok) throw new ApiError(res.status, path);
 
       const data = await res.json();
+      const etag = res.headers.get('etag');
+      if (etag && this.etagStore) this.etagStore.put(key, etag, data);
       this.cache.set(key, data);
       return data;
     }
