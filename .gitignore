@@ -5,3 +5,4 @@ out/
 .wns-cache/
 
 docs/launch/.v2ex-*.txt
+.npm-credentials-local.txt
