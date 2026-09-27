@@ -2,10 +2,22 @@
 // fast, rate-limit-friendly, and comparable ("▲ +3 since last run").
 // Best-effort by design: any read/write failure returns null / no-ops — the
 // cache must never take a live audit down.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join, posix, win32 } from 'node:path';
 import { homedir } from 'node:os';
 import { createHash } from 'node:crypto';
+
+// Directories already created this run — mkdirSync per write is pure syscall noise.
+const ensuredDirs = new Set();
+function ensureDir(dir) {
+  if (ensuredDirs.has(dir)) return;
+  try {
+    mkdirSync(dir, { recursive: true });
+    ensuredDirs.add(dir);
+  } catch {
+    /* cache must never take an audit down */
+  }
+}
 
 export const REPO_TTL_MS = 30 * 60 * 1000;      // repo payloads: fresh enough for "did my fix land?" loops
 export const SEARCH_TTL_MS = 24 * 60 * 60 * 1000; // ecosystem bucket counts: huge aggregates, change slowly
@@ -45,7 +57,7 @@ export function readData(dir, file, opts = {}) {
 
 export function writeData(dir, file, data) {
   try {
-    mkdirSync(dir, { recursive: true });
+    ensureDir(dir);
     writeFileSync(join(dir, safeFile(file)), JSON.stringify({ at: Date.now(), data }), 'utf8');
     return true;
   } catch {
@@ -73,6 +85,7 @@ function hashKey(key) {
 
 export function createEtagStore(dir) {
   const sub = join(dir, 'etag');
+  ensureDir(sub);
   const fileFor = (key) => join(sub, `${hashKey(key)}.json`);
   return {
     get(key) {
@@ -86,11 +99,33 @@ export function createEtagStore(dir) {
     },
     put(key, etag, data) {
       try {
-        mkdirSync(sub, { recursive: true });
+        ensureDir(sub);
         writeFileSync(fileFor(key), JSON.stringify({ etag, data }), 'utf8');
+        pruneEtagStore(sub);
       } catch {
         /* cache must never take an audit down */
       }
     },
   };
+}
+
+// The etag store is server-driven (no TTL), so cap it by file count —
+// keep the most recently written MAX_ETAG_FILES entries, evict the rest.
+export const MAX_ETAG_FILES = 300;
+function pruneEtagStore(sub) {
+  try {
+    const files = readdirSync(sub);
+    if (files.length <= MAX_ETAG_FILES) return;
+    const byMtime = files
+      .map((f) => {
+        try { return { f, m: statSync(join(sub, f)).mtimeMs }; } catch { return null; }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.m - a.m);
+    for (const { f } of byMtime.slice(MAX_ETAG_FILES)) {
+      try { unlinkSync(join(sub, f)); } catch { /* best-effort */ }
+    }
+  } catch {
+    /* best-effort */
+  }
 }

@@ -7,11 +7,17 @@ test('parseSlug: URLs, .git suffix, trailing slashes, case', () => {
   assert.deepEqual(parseSlug('https://github.com/a/b'), { owner: 'a', name: 'b' });
   assert.deepEqual(parseSlug('https://github.com/a/b/'), { owner: 'a', name: 'b' });
   assert.deepEqual(parseSlug('a/b.git'), { owner: 'a', name: 'b' });
+  assert.deepEqual(parseSlug('a/b.git/'), { owner: 'a', name: 'b' }); // slash before .git strip
   assert.deepEqual(parseSlug('A/B.C'), { owner: 'A', name: 'B.C' });
   assert.equal(parseSlug('not-a-slug'), null);
   assert.equal(parseSlug(''), null);
   assert.equal(parseSlug(null), null);
   assert.equal(parseSlug('a/'), null);
+  assert.equal(parseSlug('../repo'), null); // path segments rejected
+  assert.equal(parseSlug('a/..'), null);
+  assert.equal(parseSlug('a/.'), null);
+  assert.equal(parseSlug(`${'x'.repeat(101)}/b`), null); // 100-char cap per segment
+  assert.deepEqual(parseSlug(`${'x'.repeat(100)}/b`), { owner: 'x'.repeat(100), name: 'b' });
 });
 
 test('parseArgs: value flags require and reject suspicious values', () => {

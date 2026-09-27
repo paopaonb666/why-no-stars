@@ -183,15 +183,30 @@ export function parseArgs(argv) {
 export function parseSlug(raw) {
   if (!raw) return null;
   let s = raw.trim();
-  s = s.replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '').replace(/\/+$/, '');
-  const m = s.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+  // Trailing slashes first, then .git — so "o/r.git/" loses both.
+  s = s.replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '').replace(/\.git$/i, '');
+  const m = s.match(/^([A-Za-z0-9_.-]{1,100})\/([A-Za-z0-9_.-]{1,100})$/);
   if (!m) return null;
+  if (m[1] === '.' || m[1] === '..' || m[2] === '.' || m[2] === '..') return null;
   return { owner: m[1], name: m[2] };
 }
 
 function envLocale() {
-  const lang = process.env.LANG ?? process.env.LC_ALL ?? '';
-  return /zh/i.test(lang) ? 'zh' : 'en';
+  // POSIX precedence: LC_ALL beats LANG; both usually unset on Windows, where
+  // full-ICU Intl reflects the OS UI language.
+  const lc = process.env.LC_ALL ?? '';
+  if (/zh/i.test(lc)) return 'zh';
+  const lang = process.env.LANG ?? '';
+  if (/zh/i.test(lang)) return 'zh';
+  if (/zh/i.test(process.env.LANGUAGE ?? '')) return 'zh';
+  if (!lc && !lang && !process.env.LANGUAGE) {
+    try {
+      if (/^zh/i.test(Intl.DateTimeFormat().resolvedOptions().locale)) return 'zh';
+    } catch {
+      /* fall through to English */
+    }
+  }
+  return 'en';
 }
 
 function detectLocale(opts) {

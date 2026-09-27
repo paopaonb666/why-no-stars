@@ -61,6 +61,8 @@ export function sanitize(s) {
   return String(s)
     .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')
     .replace(/\u009b[0-9;?]*[A-Za-z]/g, '')
+    // Bidi overrides/isolates (visual spoofing) and zero-width joiners.
+    .replace(/[\u202A-\u202E\u2066-\u2069\u200B-\u200D]/g, '')
     .replace(/[\u0000-\u001f\u007f-\u009f\uFFFE\uFFFF]/g, ' ')
     .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
 }

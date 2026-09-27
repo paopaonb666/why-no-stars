@@ -41,13 +41,17 @@ export function percentileFromCounts(counts, { stars, language }) {
   };
 }
 
-// staggerMs is injectable so tests can run without the real 300ms pacing.
-export async function starPercentile(client, { stars, language, staggerMs = 300 }) {
+// staggerMs is injectable so tests can run without the real pacing. The 150ms
+// stagger is defensive pacing for GitHub's *undocumented* search secondary
+// limits (the documented 10-30 req/min caps comfortably fit a serial burst);
+// a skipped benchmark is graceful, so we err on the safe side but keep the
+// dead time to ~0.9s.
+export async function starPercentile(client, { stars, language, staggerMs = 150 }) {
   const langQ = language ? `+language:${encodeURIComponent(language)}` : '';
   const counts = [];
   try {
     for (const [i, b] of BUCKETS.entries()) {
-      if (i > 0 && staggerMs > 0) await sleep(staggerMs); // GitHub's search secondary rate limit fires on rapid bursts
+      if (i > 0 && staggerMs > 0) await sleep(staggerMs);
       const r = await client.getSearch(
         `/search/repositories?q=${encodeURIComponent(b.q)}${langQ}&per_page=1`
       );

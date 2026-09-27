@@ -11,6 +11,7 @@ export function T(x, lang) {
 }
 
 export function fmtNum(n) {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/.0$/, '')}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
   return String(n);
 }
@@ -186,7 +187,8 @@ function deltaLine(delta, overall, locale) {
 function relativeDays(iso, now, locale = 'en') {
   const zh = locale === 'zh';
   if (!iso) return zh ? '未知' : '?';
-  const days = Math.max(0, Math.round((now - new Date(iso)) / 86400000));
+  const raw = (now - new Date(iso)) / 86400000;
+  const days = Number.isFinite(raw) ? Math.max(0, Math.round(raw)) : NaN;
   if (days === 0) return zh ? '今天' : 'today';
   if (days === 1) return zh ? '1 天前' : '1d ago';
   if (days < 60) return zh ? `${days} 天前` : `${days}d ago`;

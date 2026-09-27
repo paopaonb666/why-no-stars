@@ -5,7 +5,7 @@ export function communityChecks(f) {
   const out = [];
   // Null means the community-profile fetch was refused — we know nothing about
   // these files, and claiming "missing" would fabricate evidence.
-  const noData = (f.community ?? null) === null;
+  const noData = !f.community || typeof f.community !== 'object' || Array.isArray(f.community);
   const files = f.community?.files ?? {};
   // The profile returns file objects ({key, name, html_url}); fixtures and
   // older payloads may carry plain strings. Normalize once for the details.

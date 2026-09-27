@@ -5,11 +5,13 @@ export function firstImpressionChecks(f) {
   const out = [];
 
   const desc = f.description ?? '';
+  // A 5,000-char description would otherwise be dumped verbatim into reports.
+  const descShown = desc.length > 140 ? `${desc.slice(0, 140)}…` : desc;
   out.push(
     check('description', 'first-impression', { en: 'Repo description', zh: '仓库描述' }, {
       status: !desc ? 'fail' : desc.length >= 15 && desc.length <= 130 ? 'pass' : 'warn',
       detail: desc
-        ? { en: `“${desc}” (${desc.length} chars)`, zh: `「${desc}」（${desc.length} 字符）` }
+        ? { en: `“${descShown}” (${desc.length} chars)`, zh: `「${descShown}」（${desc.length} 字符）` }
         : { en: 'No description set.', zh: '未设置 description。' },
       fix: {
         en: 'Write a 15–130 char description: what it does + for whom + the differentiator.',

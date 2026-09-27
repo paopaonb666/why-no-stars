@@ -522,3 +522,25 @@ test('star-velocity: full history uses the 90-day window, not the lifetime avera
   assert.match(c.detail.en, /full history known/);
   assert.match(c.detail.en, /23 star\(s\) in the last 90 days/);
 });
+
+test('corrupted cache payloads surface as skips, never NaN-day FAILs', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ pushed_at: 'abc' }); // hand-corrupted cache shape
+  const checks = runChecks(buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') }));
+  assert.equal(checks.find((x) => x.id === 'recent-activity').status, 'skip');
+  // garbage star count coerces to 0 (honest fail), never "NaN stars/week"
+  const p2 = badPayloads();
+  p2.repo = baseRepo({ stargazers_count: 'abc', created_at: '2026-08-01T00:00:00Z', pushed_at: '2026-09-20T00:00:00Z' });
+  const facts2 = buildFacts(p2, { now: new Date('2026-09-27T00:00:00Z') });
+  assert.equal(facts2.stars, 0);
+  const v = runChecks(facts2).find((x) => x.id === 'star-velocity');
+  assert.ok(!JSON.stringify(v).includes('NaN'));
+});
+
+test('community payloads of the wrong TYPE count as no data (no fabricated absence)', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ license: { spdx_id: 'MIT' } });
+  p.community = []; // array, not an object — garbage, not "no license"
+  const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'license');
+  assert.equal(c.status, 'pass'); // spdx from the repo payload still counts
+});

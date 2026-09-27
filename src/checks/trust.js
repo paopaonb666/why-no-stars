@@ -19,7 +19,7 @@ export function trustChecks(f) {
   // The repo payload itself carries license info — when the community-profile
   // fetch was refused, spdx is still usable evidence; only the "license FILE
   // present" part becomes unverified.
-  const noCommunity = (f.community ?? null) === null;
+  const noCommunity = !f.community || typeof f.community !== 'object' || Array.isArray(f.community);
   // A package.json contradicting the repo license misleads everyone arriving
   // from npm. Dual-license expressions ("MIT OR Apache-2.0") are left alone.
   const pkgLicense = typeof f.packageJson?.license === 'string'
@@ -153,7 +153,8 @@ export function trustChecks(f) {
     })
   );
 
-  const days = f.pushedAt ? daysBetween(new Date(f.pushedAt), now) : null;
+  const rawDays = f.pushedAt ? daysBetween(new Date(f.pushedAt), now) : null;
+  const days = Number.isFinite(rawDays) ? rawDays : null;
   out.push(
     check('recent-activity', 'trust', { en: 'Recent activity (90d)', zh: '近期有提交（90 天内）' }, {
       // Unknown push time is not "abandoned" — skip instead of fabricating.

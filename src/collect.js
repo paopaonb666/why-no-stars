@@ -90,22 +90,26 @@ export function parseReadme(text) {
   // Setext headings (Title\n=====) — used by the Linux kernel README. Skip
   // anything inside recorded code blocks, list items, and tables: a `---`
   // under a line of a fenced YAML/diff example is not a heading.
-  const insideCodeBlock = (n) => codeBlocks.some((b) => n >= b.start && n <= b.end);
+  // O(n) via sets: code-block line membership and taken heading lines.
+  const cbLines = new Set();
+  for (const b of codeBlocks) {
+    for (let l = b.start; l <= b.end; l++) cbLines.add(l);
+  }
+  const taken = new Set(headings.map((h) => h.line));
   if (!inFence) {
     for (let i = 0; i < lines.length - 1; i++) {
       const st = lines[i].trim();
       const u = lines[i + 1].trim();
-      if (!st || insideCodeBlock(i + 1) || insideCodeBlock(i + 2)) continue;
-      if (headings.some((h) => h.line === i + 1)) continue;
-      if (/^={2,}$/.test(u) && !/^[-*+]\s/.test(st)) headings.push({ level: 1, text: st, line: i + 1 });
-      else if (/^-{2,}$/.test(u) && !/^[-*+]\s/.test(st) && !/^[-*+]?\s*\[[ x]\]/i.test(st) && !st.startsWith('|')) headings.push({ level: 2, text: st, line: i + 1 });
+      const n1 = i + 1;
+      if (!st || cbLines.has(n1) || cbLines.has(n1 + 1) || taken.has(n1)) continue;
+      if (/^={2,}$/.test(u) && !/^[-*+]\s/.test(st)) headings.push({ level: 1, text: st, line: n1 });
+      else if (/^-{2,}$/.test(u) && !/^[-*+]\s/.test(st) && !/^[-*+]?\s*\[[ x]\]/i.test(st) && !st.startsWith('|')) headings.push({ level: 2, text: st, line: n1 });
     }
   }
   headings.sort((a, b) => a.line - b.line);
 
   const installLine = findInstallLine(lines);
   return {
-    text,
     lineCount: lines.length,
     headings,
     images,
@@ -127,7 +131,7 @@ const probeFound = (v) =>
   (typeof v === 'string' && v !== 'known-absent' && v !== 'unknown');
 
 export function buildFacts(p, { now = new Date() } = {}) {
-  const repo = p.repo;
+  const repo = p.repo && typeof p.repo === 'object' ? p.repo : {};
   const readmeText = p.readme ? decodeBase64File(p.readme) : null;
 
   let packageJson = null;
@@ -183,10 +187,10 @@ export function buildFacts(p, { now = new Date() } = {}) {
     description: repo.description ?? null,
     topics: repo.topics ?? [],
     homepage: repo.homepage ?? null,
-    stars: repo.stargazers_count ?? 0,
-    forks: repo.forks_count ?? 0,
-    watchers: repo.subscribers_count ?? 0,
-    openIssues: repo.open_issues_count ?? 0,
+    stars: Number(repo.stargazers_count) || 0,
+    forks: Number(repo.forks_count) || 0,
+    watchers: Number(repo.subscribers_count) || 0,
+    openIssues: Number(repo.open_issues_count) || 0,
     isFork: Boolean(repo.fork),
     isArchived: Boolean(repo.archived),
     pushedAt: repo.pushed_at ?? null,
