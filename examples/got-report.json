@@ -20,15 +20,15 @@
     "lowerPct": 100,
     "upperPct": 100,
     "buckets": [
-      16748515,
-      1854197,
+      16748606,
+      1854203,
       151812,
       30360,
       5594,
       830
     ],
     "peerLanguage": "TypeScript",
-    "totalPeers": 18791308
+    "totalPeers": 18791405
   },
   "pillars": [
     {
@@ -349,6 +349,6 @@
       "fix": "If velocity is near zero, treat the README as a landing page and re-launch the project (rename, rewrite the pitch, post again)."
     }
   ],
-  "generatedAt": "2026-09-27T06:50:49.408Z",
+  "generatedAt": "2026-09-27T06:56:03.645Z",
   "tool": "why-no-stars v1.0.0"
 }

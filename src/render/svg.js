@@ -36,9 +36,9 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   const FONT = 'Segoe UI, PingFang SC, Microsoft YaHei, sans-serif';
 
   // Vertical rhythm (baselines): name 84, meta 124, benchmark 166,
-  // big score 300, /100 336, grade chip 220-300, pillars 372..594, footer 610.
-  const pillarTop = 372;
-  const pillarStep = 44;
+  // big score 300, /100 336, grade chip 220-300, pillars 356..556, footer 608.
+  const pillarTop = 356;
+  const pillarStep = 40;
 
   const pillarRows = scorecard.pillars
     .filter((p) => p.score !== null)
@@ -49,8 +49,8 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
       const c = colorFor(p.score);
       return `
     <text x="90" y="${y}" font-family="${FONT}" font-size="21" fill="#c9d1d9">${esc(T(p.name, locale))}</text>
-    <rect x="430" y="${y - 15}" width="${barW}" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="${y - 15}" width="${fill.toFixed(1)}" height="14" rx="7" fill="${c}"/>
+    <rect x="430" y="${y - 14}" width="${barW}" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="${y - 14}" width="${fill.toFixed(1)}" height="13" rx="6.5" fill="${c}"/>
     <text x="752" y="${y}" font-family="${FONT}" font-size="21" fill="${c}">${p.score}</text>`;
     })
     .join('');
@@ -96,7 +96,7 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
 
   ${pillarRows}
 
-  <text x="90" y="610" font-family="${FONT}" font-size="20" fill="#8b949e">why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx why-no-stars &lt;owner/repo&gt;</text>
+  <text x="90" y="608" font-family="${FONT}" font-size="19" fill="#8b949e">why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx why-no-stars &lt;owner/repo&gt;</text>
 </svg>
 `;
 }

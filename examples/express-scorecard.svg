@@ -25,30 +25,30 @@
   <text x="383" y="279" text-anchor="middle" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="52" font-weight="800" fill="#3fb950">S</text>
 
   
-    <text x="90" y="372" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">First impression</text>
-    <rect x="430" y="357" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="357" width="225.0" height="14" rx="7" fill="#d29922"/>
-    <text x="752" y="372" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#d29922">75</text>
-    <text x="90" y="416" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Time-to-hello-world</text>
-    <rect x="430" y="401" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="401" width="300.0" height="14" rx="7" fill="#3fb950"/>
-    <text x="752" y="416" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
-    <text x="90" y="460" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Trust &amp; maintenance</text>
-    <rect x="430" y="445" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="445" width="300.0" height="14" rx="7" fill="#3fb950"/>
-    <text x="752" y="460" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
-    <text x="90" y="504" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Community health</text>
-    <rect x="430" y="489" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="489" width="270.0" height="14" rx="7" fill="#3fb950"/>
-    <text x="752" y="504" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">90</text>
-    <text x="90" y="548" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Discoverability</text>
-    <rect x="430" y="533" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="533" width="264.0" height="14" rx="7" fill="#3fb950"/>
-    <text x="752" y="548" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">88</text>
-    <text x="90" y="592" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Momentum</text>
-    <rect x="430" y="577" width="300" height="14" rx="7" fill="#21262d"/>
-    <rect x="430" y="577" width="300.0" height="14" rx="7" fill="#3fb950"/>
-    <text x="752" y="592" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
+    <text x="90" y="356" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">First impression</text>
+    <rect x="430" y="342" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="342" width="225.0" height="13" rx="6.5" fill="#d29922"/>
+    <text x="752" y="356" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#d29922">75</text>
+    <text x="90" y="396" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Time-to-hello-world</text>
+    <rect x="430" y="382" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="382" width="300.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="396" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
+    <text x="90" y="436" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Trust &amp; maintenance</text>
+    <rect x="430" y="422" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="422" width="300.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="436" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
+    <text x="90" y="476" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Community health</text>
+    <rect x="430" y="462" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="462" width="270.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="476" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">90</text>
+    <text x="90" y="516" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Discoverability</text>
+    <rect x="430" y="502" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="502" width="264.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="516" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">88</text>
+    <text x="90" y="556" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Momentum</text>
+    <rect x="430" y="542" width="300" height="13" rx="6.5" fill="#21262d"/>
+    <rect x="430" y="542" width="300.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="556" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
 
-  <text x="90" y="610" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" fill="#8b949e">why-no-stars · stars aren’t luck. they’re the first 10 seconds, done right.   npx why-no-stars &lt;owner/repo&gt;</text>
+  <text x="90" y="608" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="19" fill="#8b949e">why-no-stars · stars aren’t luck. they’re the first 10 seconds, done right.   npx why-no-stars &lt;owner/repo&gt;</text>
 </svg>
