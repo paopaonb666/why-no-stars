@@ -46,8 +46,8 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
     f.isFork ? yellow(T({ en: 'FORK', zh: 'FORK' }, locale)) : null,
   ].filter(Boolean);
   push(
-    bold(f.fullName) +
-      gray(`  ★ ${fmtNum(f.stars)}  ·  ${f.language ?? '?'}  ·  `) +
+    bold(sanitize(f.fullName)) +
+      gray(`  ★ ${fmtNum(f.stars)}  ·  ${sanitize(f.language ?? '?')}  ·  `) +
       T({ en: 'pushed ', zh: '最近提交 ' }, locale) + gray(relativeDays(f.pushedAt, f.now, locale)) +
       (tags.length ? gray('  ·  ') + tags.join(gray(' · ')) : '')
   );
@@ -69,8 +69,8 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
     line2 =
       '  ' +
       (locale === 'zh'
-        ? `生态分位：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
-        : `Ecosystem: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`);
+        ? `生态分位：${fmtTopZh(benchmark)}（${sanitize(f.language ?? 'GitHub')}）`
+        : `Ecosystem: ${fmtTopEn(benchmark)} of ${sanitize(f.language ?? 'GitHub')} repos`);
     // The 0-bucket swamps the range for tiny repos; give them the context the
     // range alone can't carry.
     if (f.stars <= 9 && benchmark.share0 > 50) {

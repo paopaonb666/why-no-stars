@@ -22,13 +22,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export function percentileFromCounts(counts, { stars, language }) {
   const pct = computePercentile(counts, stars);
   if (!pct) return null;
-  // Median peer: the bucket where the cumulative share crosses 50%.
+  // Median peer: the bucket where the cumulative share crosses 50%. Clamped:
+  // counts comes from computePercentile (exact 7 buckets), but the clamp
+  // keeps a future drift from throwing on BUCKETS[medianIdx].
   let cum = 0;
   let medianIdx = 0;
   for (const [i, c] of counts.entries()) {
     cum += c;
     if (cum >= pct.total / 2) { medianIdx = i; break; }
   }
+  medianIdx = Math.min(medianIdx, BUCKETS.length - 1);
   const share0 = pct.total ? (counts[0] / pct.total) * 100 : 0;
   return {
     ...pct,

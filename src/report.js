@@ -1,12 +1,13 @@
 // JSON report builder — extracted from cli.js so the shape is unit-testable.
 import { T } from './render/terminal.js';
+import { sanitize } from './ansi.js';
 
 export function buildJsonReport({ facts, scorecard, benchmark, checks, version, delta = null, stale = false, locale = 'en' }) {
   return {
     schema: 1, // bump when the shape below changes meaningfully
     repo: {
-      fullName: facts.fullName, stars: facts.stars, language: facts.language,
-      description: facts.description, topics: facts.topics, pushedAt: facts.pushedAt,
+      fullName: sanitize(facts.fullName), stars: facts.stars, language: sanitize(facts.language),
+      description: facts.description == null ? null : sanitize(facts.description), topics: Array.isArray(facts.topics) ? facts.topics.map(sanitize) : facts.topics, pushedAt: facts.pushedAt,
       isArchived: Boolean(facts.isArchived), isFork: Boolean(facts.isFork),
     },
     overall: scorecard.overall,
@@ -20,7 +21,7 @@ export function buildJsonReport({ facts, scorecard, benchmark, checks, version, 
       lowerPct: Number(benchmark.lowerPct.toFixed(2)),
       upperPct: Number(benchmark.upperPct.toFixed(2)),
       buckets: benchmark.counts,
-      peerLanguage: facts.language,
+      peerLanguage: sanitize(facts.language),
       totalPeers: benchmark.total,
       share0Pct: Number(benchmark.share0.toFixed(1)),
       medianBucket: T(benchmark.medianLabel, locale),

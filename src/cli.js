@@ -9,7 +9,7 @@ import { starPercentile, percentileFromCounts } from './benchmark.js';
 import { renderTerminal, fmtTopEn, fmtTopZh } from './render/terminal.js';
 import { renderSvg } from './render/svg.js';
 import { renderMarkdown } from './render/markdown.js';
-import { setColorMode, dim } from './ansi.js';
+import { setColorMode, dim, sanitize } from './ansi.js';
 import { resolveCacheDir, createEtagStore, readEntry, writeData, fmtAge, REPO_TTL_MS, SEARCH_TTL_MS } from './cache.js';
 import { buildJsonReport } from './report.js';
 
@@ -397,7 +397,7 @@ export async function main(argv) {
         ? (d === 0 ? '（与上次运行持平）' : `（较上次运行 ${d > 0 ? '▲+' : '▼'}${d}）`)
         : ` (${d === 0 ? 'Δ0' : d > 0 ? `▲+${d}` : `▼${d}`} vs last run)`;
     }
-    const summary = `${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}${deltaNote}`;
+    const summary = `${sanitize(facts.fullName)}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}${deltaNote}`;
     if (toStdout) console.error(dim(summary));
     else console.log(summary);
   } else {

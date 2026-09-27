@@ -90,9 +90,11 @@ export function scoreChecks(checks, { isArchived = false } = {}) {
 }
 
 export function computePercentile(counts, stars) {
-  // counts: star-count totals per BUCKETS entry (ascending buckets). A short
-  // array (e.g. cache drift from an older version) would make `through` NaN.
-  if (!Array.isArray(counts) || counts.length < BUCKET_INDEX.length || counts.some((c) => typeof c !== 'number' || c < 0)) return null;
+  // counts: star-count totals per BUCKETS entry (ascending buckets). Exact
+  // length and finiteness required: a poisoned/short/long array (cache drift
+  // or tampering) must yield null, never NaN or an out-of-range bucket.
+  if (!Array.isArray(counts) || counts.length !== BUCKET_INDEX.length ||
+      counts.some((c) => typeof c !== 'number' || !Number.isFinite(c) || c < 0)) return null;
   const total = counts.reduce((a, b) => a + b, 0);
   if (total === 0) return null;
 

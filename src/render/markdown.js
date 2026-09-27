@@ -37,18 +37,18 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale, stale = fa
     out.push('');
   }
 
-  out.push(zh ? `# 🩺 ${f.fullName} 体检报告` : `# 🩺 ${f.fullName} scorecard`);
+  out.push(zh ? `# 🩺 ${mdInline(f.fullName)} 体检报告` : `# 🩺 ${mdInline(f.fullName)} scorecard`);
   out.push('');
   out.push(
     zh
-      ? `**总分 ${scorecard.overall}/100（${scorecard.grade}）** · ★ ${fmtNum(f.stars)} · ${f.language ?? '?'}${f.isArchived ? ' · 已归档' : ''}${f.isFork ? ' · fork' : ''}`
-      : `**Overall ${scorecard.overall}/100 (${scorecard.grade})** · ★ ${fmtNum(f.stars)} · ${f.language ?? '?'}${f.isArchived ? ' · archived' : ''}${f.isFork ? ' · fork' : ''}`
+      ? `**总分 ${scorecard.overall}/100（${scorecard.grade}）** · ★ ${fmtNum(f.stars)} · ${mdInline(f.language ?? '?')}${f.isArchived ? ' · 已归档' : ''}${f.isFork ? ' · fork' : ''}`
+      : `**Overall ${scorecard.overall}/100 (${scorecard.grade})** · ★ ${fmtNum(f.stars)} · ${mdInline(f.language ?? '?')}${f.isArchived ? ' · archived' : ''}${f.isFork ? ' · fork' : ''}`
   );
   if (benchmark) {
     out.push(
       zh
-        ? `**生态分位**：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
-        : `**Ecosystem**: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`
+        ? `**生态分位**：${fmtTopZh(benchmark)}（${mdInline(f.language ?? 'GitHub')}）`
+        : `**Ecosystem**: ${fmtTopEn(benchmark)} of ${mdInline(f.language ?? 'GitHub')} repos`
     );
     // Tiny-repo context, matching the terminal/SVG line.
     if (f.stars <= 9 && benchmark.share0 > 50) {
