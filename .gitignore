@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 out/
 .wns-cache/
+
+docs/launch/.v2ex-*.txt
