@@ -82,7 +82,7 @@ wns 我的项目 --zh               # 中文输出（中文环境自动生效）
 对着抽象的最佳实践打分谁都会。`why-no-stars` 还会告诉你：**在你的语言的全部仓库里，你排在什么位置。** 它通过 GitHub 搜索 API 统计同主语言所有仓库的 star 分布（0、1–9、10–99、100–999、1k–10k、10k+ 六个桶），然后给出一个诚实的**区间**：
 
 ```text
-expressjs/express: 91/100 (S) · 前 <1% 的同类仓库
+expressjs/express: 91/100 (S) · star 数超过同类仓库的 99–100%
 ```
 
 只给区间不装精确——因为我们只知道你落在哪个桶里，不会编造精度。
@@ -110,7 +110,7 @@ wns 用户名/仓库 --svg scorecard.svg --json report.json --md report.md --zh
 我们体检了 [`sindresorhus/got`](https://github.com/sindresorhus/got)——GitHub 上打磨最精致的仓库之一：
 
 ```text
-  总分  91/100  [S]          生态分位：前 <1% 的 TypeScript 仓库
+  总分  91/100  [S]          生态分位：star 数超过同类仓库的 99–100%（TypeScript）
 
   第一印象     ████████░░   75  (w 25)
   快速上手     ██████████  100  (w 20)
@@ -127,6 +127,14 @@ wns 用户名/仓库 --svg scorecard.svg --json report.json --md report.md --zh
 ```
 
 连 S 级仓库都能拿到具体可执行的改进项——这就对了，这不是虚荣分数。
+
+## 我们给自己也做体检
+
+言行一致不是口号。下面是 `why-no-stars` 体检**它自己**的真实报告（发布几分钟后跑的，包括难看的数字）：
+
+<img src="./examples/self-scorecard.svg" alt="why-no-stars 自审计：发布当天 82/100" width="640">
+
+增长势头是 0，因为今天刚发布——工具拒绝装糊涂。README、社区模板、release 卫生都已经拉满，唯一缺的支柱就握在你手里。 😉
 
 ## FAQ
 

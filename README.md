@@ -85,11 +85,11 @@ Across these pillars it runs **31 checks** — each with a status, evidence, an 
 Scoring your repo against abstract best practices is easy. `why-no-stars` also tells you **where you stand in your language's ecosystem**. It counts every repo in your primary language by star bucket (0, 1–9, 10–99, 100–999, 1k–10k, 10k+) via the GitHub search API, then reports an honest **range**:
 
 ```text
-expressjs/express: 91/100 (S) · top <1% of peers
+expressjs/express: 91/100 (S) · more stars than 99–100% of peers
 ```
 
 ```text
-me/my-project: 38/100 (F) · top 72–85% of peers
+me/my-project: 38/100 (F) · more stars than 30–45% of peers
 ```
 
 A range, because you only know your bucket — we won't invent precision we don't have.
@@ -117,7 +117,7 @@ Exit codes: `0` ok · `1` error (repo not found, etc.) · `2` rate-limited.
 We audited [`sindresorhus/got`](https://github.com/sindresorhus/got) — one of the most polished repos on GitHub:
 
 ```text
-  Overall  91/100  [S]          Star percentile: top <1% of TypeScript repos
+  Overall  91/100  [S]          Ecosystem: more stars than 99–100% of TypeScript repos
 
   First impression     ████████░░   75  (w 25)
   Time-to-hello-world  ██████████  100  (w 20)
@@ -134,6 +134,14 @@ We audited [`sindresorhus/got`](https://github.com/sindresorhus/got) — one of 
 ```
 
 Even an S-grade repo gets concrete, actionable feedback. That's the point — this is not a vanity score.
+
+## We audit ourselves
+
+Dogfooding is not optional here. This is `why-no-stars` auditing **this very repo**, minutes after launch — honest numbers, including the ugly ones:
+
+<img src="./examples/self-scorecard.svg" alt="why-no-stars auditing itself: 82/100 at launch" width="640">
+
+Momentum is 0 because we launched today, and the tool refuses to pretend otherwise. The README, community templates, and release hygiene are already maxed — the only missing pillar is the one you're holding. 😉
 
 ## FAQ
 

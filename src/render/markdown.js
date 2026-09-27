@@ -16,8 +16,8 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
   if (benchmark) {
     out.push(
       zh
-        ? `**生态分位**：${fmtTopZh(benchmark)} 的 ${f.language ?? 'GitHub'} 仓库`
-        : `**Star percentile**: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`
+        ? `**生态分位**：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
+        : `**Ecosystem**: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`
     );
   }
   out.push('');

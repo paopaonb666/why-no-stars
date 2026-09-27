@@ -58,8 +58,8 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   let benchLine = '';
   if (benchmark) {
     benchLine = zh
-      ? `生态分位：${fmtTopZh(benchmark)} 的 ${f.language ?? 'GitHub'} 仓库`
-      : `Star percentile: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`;
+      ? `生态分位：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
+      : `Ecosystem: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`;
   } else {
     benchLine = zh
       ? `${scorecard.stats.passed}/${scorecard.stats.total} 项检查通过`

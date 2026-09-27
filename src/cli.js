@@ -189,7 +189,7 @@ export async function main(argv) {
   if (opts.quiet) {
     const pct = benchmark
       ? (zh
-        ? ` · ${fmtTopZh(benchmark)} 的同类仓库`
+        ? ` · ${fmtTopZh(benchmark)}`
         : ` · ${fmtTopEn(benchmark)} of peers`)
       : '';
     console.log(`${facts.fullName}: ${scorecard.overall}/100 (${scorecard.grade})${pct}`);

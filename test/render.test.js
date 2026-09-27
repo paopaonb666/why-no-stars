@@ -50,18 +50,15 @@ function setup(locale = 'en') {
   return { facts, scorecard, benchmark, locale };
 }
 
-test('SVG scorecard contains the essentials and escapes XML', () => {
+test('SVG scorecard contains the essentials; percentile is an honest range', () => {
   const svg = renderSvg(setup());
   assert.ok(svg.includes('me/demo'));
   assert.ok(svg.includes('★ 47'));
-  assert.ok(svg.includes('top 30–60% of Rust repos'));
-  assert.ok(svg.includes('&amp;')); // escaped &
-  assert.ok(!svg.includes('<repo>')); // raw < must not leak into text nodes
+  assert.ok(svg.includes('more stars than 40–70% of Rust repos'));
   assert.equal(svg.startsWith('<svg'), true);
-  // a bare "<" from formatting (e.g. "top <1%") must be escaped, or the XML breaks
+  // a repo at the very top of the ecosystem still gets an honest range
   const nearTop = renderSvg(setupWith({ lowerPct: 99.99, upperPct: 99.997 }));
-  assert.ok(nearTop.includes('top &lt;1%'));
-  assert.ok(!nearTop.includes('top <1%'));
+  assert.ok(nearTop.includes('more stars than 99–100% of Rust repos'));
 });
 
 function setupWith(benchOverride) {
@@ -69,6 +66,14 @@ function setupWith(benchOverride) {
   s.benchmark = { ...s.benchmark, ...benchOverride };
   return s;
 }
+
+test('SVG escapes interpolated text (a raw < would break the XML document)', () => {
+  const s = setup();
+  s.facts.fullName = 'me/<b>&x';
+  const svg = renderSvg(s);
+  assert.ok(svg.includes('me/&lt;b&gt;&amp;x'));
+  assert.ok(!svg.includes('me/<b>'));
+});
 
 test('Markdown report is paste-ready', () => {
   const md = renderMarkdown(setup());

@@ -52,8 +52,8 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
     line2 =
       '  ' +
       (locale === 'zh'
-        ? `生态分位：${fmtTopZh(benchmark)} 的 ${f.language ?? 'GitHub'} 仓库`
-        : `Star percentile: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`);
+        ? `生态分位：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
+        : `Ecosystem: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`);
   }
   push(line1);
   if (line2) push(gray(line2));
@@ -126,17 +126,19 @@ function useColorSafe() {
   }
 }
 
-// "top 4–12%" for normal repos, "top <1%" for giants — never "top 0–0%".
+// One honest metric everywhere: the share of same-language repos you beat.
+// "more stars than 99–100%" for giants, "more stars than 0–90%" for the
+// 0-star floor — the wide range IS the honest answer. Callers append the peer group.
 export function fmtTopEn(b) {
-  const lo = 100 - b.upperPct;
-  const hi = 100 - b.lowerPct;
-  if (hi < 1) return 'top <1%';
-  return `top ${Math.max(1, Math.floor(lo))}–${Math.max(1, Math.ceil(hi))}%`;
+  const lo = Math.floor(b.lowerPct);
+  const hi = Math.min(100, Math.ceil(b.upperPct));
+  return `more stars than ${lo}–${hi}%`;
 }
 
 export function fmtTopZh(b) {
-  if (b.lowerPct > 99) return '前 <1%';
-  return `前 ${(100 - b.upperPct).toFixed(0)}–${(100 - b.lowerPct).toFixed(0)}%`;
+  const lo = Math.floor(b.lowerPct);
+  const hi = Math.min(100, Math.ceil(b.upperPct));
+  return `star 数超过同类仓库的 ${lo}–${hi}%`;
 }
 
 function relativeDays(iso, now) {

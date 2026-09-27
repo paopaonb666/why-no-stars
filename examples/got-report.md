@@ -1,7 +1,7 @@
 # 🩺 sindresorhus/got scorecard
 
 **Overall 91/100 (S)** · ★ 14948 · TypeScript
-**Star percentile**: top <1% of TypeScript repos
+**Ecosystem**: more stars than 99–100% of TypeScript repos
 
 ## Pillars
 
