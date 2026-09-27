@@ -215,7 +215,7 @@ test('sanitize: repo-controlled text cannot carry terminal escapes', () => {
   assert.equal(sanitize('\x1b[31mred\x1b[0m'), 'red');
   assert.equal(sanitize('\x1b[2J\x1b[3J'), ''); // clear-screen sequences removed whole
   assert.equal(sanitize('a\u0000b\u0007c'), 'a b c'); // control chars -> space
-  assert.equal(sanitize('\u009B31mred'), ' red'); // 8-bit CSI cannot sneak through
+  assert.equal(sanitize('\u009B31mred'), 'red'); // 8-bit CSI stripped whole, like ESC
   assert.equal(sanitize('bad\uFFFEworse\uFFFF'), 'bad worse '); // XML-noncharacters dropped
   assert.equal(sanitize('plain 中文 text'), 'plain 中文 text');
 });
