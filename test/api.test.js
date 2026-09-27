@@ -102,14 +102,22 @@ test('client: network failure and timeout become NetworkError (no raw stack)', a
     new GitHubClient({ fetchImpl: offline }).get('/repos/o/r'),
     (err) => err instanceof NetworkError && err.timedOut === false
   );
-  // Real AbortSignal.timeout wiring: a fetch that hangs until the signal fires
+  // Real AbortSignal.timeout wiring: a fetch that hangs until the signal fires.
+  // The keep-alive timer holds the event loop open — AbortSignal timers are
+  // unref'd on some Node versions (22), which drains the loop mid-test and
+  // leaves the test promise permanently pending.
+  const keepAlive = setTimeout(() => {}, 1_000);
   const hanging = (url, init) => new Promise((_, reject) => {
     init.signal.addEventListener('abort', () => reject(init.signal.reason));
   });
-  await assert.rejects(
-    new GitHubClient({ fetchImpl: hanging, timeoutMs: 25 }).get('/repos/o/r'),
-    (err) => err instanceof NetworkError && err.timedOut === true
-  );
+  try {
+    await assert.rejects(
+      new GitHubClient({ fetchImpl: hanging, timeoutMs: 25 }).get('/repos/o/r'),
+      (err) => err instanceof NetworkError && err.timedOut === true
+    );
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
 
 test('fetchPayloads: community profile fetch failed -> probes stay unknown', async () => {
