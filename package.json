@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "npm test",
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "files": [
     "bin.js",

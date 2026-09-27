@@ -172,6 +172,38 @@ test('real-world fixture (sindresorhus/got): healthy repo passes key checks', { 
   assert.equal(sc.overall >= 70, true, `got scored ${sc.overall}`);
 });
 
+const REACT_FIXTURE = new URL('./fixtures/react.json', import.meta.url);
+
+test('real-world fixture (facebook/react): mega-repo paths hold up on live data', { skip: !existsSync(REACT_FIXTURE) && 'fixture not recorded yet' }, () => {
+  const payloads = JSON.parse(readFileSync(REACT_FIXTURE, 'utf8'));
+  const facts = buildFacts(payloads, { now: new Date() });
+  const checks = runChecks(facts);
+  const sc = scoreChecks(checks);
+  const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
+
+  // deep stargazers pagination is capped by GitHub -> sample 'none', and the
+  // events feed is the honest fallback (fixture was recorded live, so events
+  // exist; the recency verdict itself is time-dependent and NOT asserted)
+  assert.equal(facts.starSample, 'none');
+  assert.equal(facts.eventsPresent, true);
+  assert.equal(facts.recentStarEvents28 >= 1, true, 'recorded feed should show recent stars');
+
+  // community profile + probes: react has all the files
+  assert.equal(byId['issue-template'].status, 'pass');
+  assert.equal(byId['security-policy'].status, 'pass');
+  assert.equal(byId.license.status, 'pass'); // MIT
+  assert.equal(byId['not-fork-not-archived'].status, 'pass');
+  assert.equal(byId.tests.status, 'pass');
+  assert.equal(byId.semver.status, 'pass');
+
+  // honest even for famous repos: react's README ships no install one-liner
+  // and no hero image — both FAILs are real, not parser bugs
+  assert.equal(byId['install-oneliner'].status, 'fail');
+  assert.equal(byId['hero-visual'].status, 'fail');
+
+  assert.equal(sc.overall >= 70, true, `react scored ${sc.overall}`);
+});
+
 test('momentum check: no stars at all -> fail with guidance', () => {
   const facts = buildFacts(badPayloads(), { now: new Date('2026-09-27T00:00:00Z') });
   const checks = runChecks(facts);
