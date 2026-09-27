@@ -5,7 +5,7 @@ import { runChecks } from '../src/checks/index.js';
 import { scoreChecks } from '../src/score.js';
 import { renderSvg, fitText } from '../src/render/svg.js';
 import { renderMarkdown } from '../src/render/markdown.js';
-import { renderTerminal } from '../src/render/terminal.js';
+import { renderTerminal, fmtTopEn, fmtTopZh } from '../src/render/terminal.js';
 import { setColorMode } from '../src/ansi.js';
 
 setColorMode('never');
@@ -85,7 +85,7 @@ test('Markdown report is paste-ready', () => {
 test('terminal renderer handles zh locale and CJK width without crash', () => {
   const out = renderTerminal(setup('zh'));
   assert.ok(out.includes('总分'));
-  assert.ok(out.includes('最值得先做的三件事'));
+  assert.ok(out.includes('最值得先做的几件事'));
 });
 
 test('terminal renderer English output', () => {
@@ -126,6 +126,36 @@ test('markdown: a literal backslash-pipe in repo text cannot split the table row
   const row = md.split('\n').find((l) => l.startsWith('|') && l.includes('Repo description'));
   const unescapedPipes = (row.match(/(^|[^\\])\|/g) ?? []).length;
   assert.equal(unescapedPipes, 4);
+});
+
+test('stale flag renders a warning banner in every sharing format', () => {
+  const s = setup();
+  s.stale = true;
+  const md = renderMarkdown(s);
+  assert.ok(md.includes('STALE DATA'));
+  assert.ok(md.startsWith('> ⚠️'));
+  const svg = renderSvg(s);
+  assert.ok(svg.includes('STALE DATA'));
+  assert.ok(svg.includes('#d29922'));
+  // default: no banner
+  assert.ok(!renderMarkdown(setup()).includes('STALE DATA'));
+  assert.ok(!renderSvg(setup()).includes('STALE DATA'));
+});
+
+test('fmtTop: sub-1% upper bounds render one decimal, never "0–0%"', () => {
+  // GitHub's search index lags new repos: own bucket and below can be all 0
+  const b = { lowerPct: 0, upperPct: 0.4 };
+  assert.equal(fmtTopEn(b), 'more stars than 0.4%');
+  assert.equal(fmtTopZh(b), 'star 数超过同类仓库的 0.4%');
+  // normal ranges keep the integer format
+  assert.equal(fmtTopEn({ lowerPct: 40, upperPct: 70 }), 'more stars than 40–70%');
+});
+
+test('quickWins render recovered points, not a static label that could contradict order', () => {
+  const out = renderTerminal(setup('en'));
+  assert.ok(/\[\+\d+\.\d pts\]/.test(out), 'expected [+X.X pts] in the Top fixes list');
+  const md = renderMarkdown(setup());
+  assert.ok(/\+\d+\.\d pts/.test(md));
 });
 
 test('fitText: shrinks, then truncates with an ellipsis; short text untouched', () => {

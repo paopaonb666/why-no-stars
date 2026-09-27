@@ -110,7 +110,9 @@ export function parseArgs(argv) {
   const nextValue = (flag) => {
     const v = argv[++i];
     if (v === undefined || v.trim() === '' || v.startsWith('--')) {
-      throw new UsageError(`Option ${flag} requires a non-empty value.`);
+      throw new UsageError(envLocale() === 'zh'
+        ? `选项 ${flag} 需要一个非空值。`
+        : `Option ${flag} requires a non-empty value.`);
     }
     return v;
   };
@@ -123,7 +125,9 @@ export function parseArgs(argv) {
     const inline = a.startsWith('--') && eq > 2 ? a.slice(eq + 1) : undefined;
     // `--md=` / `--md ""` would silently disable the output — reject loudly.
     if (inline !== undefined && inline.trim() === '') {
-      throw new UsageError(`Option ${flag} requires a non-empty value.`);
+      throw new UsageError(envLocale() === 'zh'
+        ? `选项 ${flag} 需要一个非空值。`
+        : `Option ${flag} requires a non-empty value.`);
     }
     switch (flag) {
       case '--svg': opts.svg = inline ?? nextValue('--svg'); break;
@@ -138,7 +142,9 @@ export function parseArgs(argv) {
       case '--fail-under': {
         const v = inline ?? nextValue('--fail-under');
         if (!/^\d+$/.test(v) || Number(v) > 100) {
-          throw new UsageError(`--fail-under expects an integer 0–100, got ${JSON.stringify(v)}.`);
+          throw new UsageError(envLocale() === 'zh'
+            ? `--fail-under 需要 0–100 的整数，收到 ${JSON.stringify(v)}。`
+            : `--fail-under expects an integer 0–100, got ${JSON.stringify(v)}.`);
         }
         opts.failUnder = Number(v);
         break;
@@ -149,12 +155,16 @@ export function parseArgs(argv) {
       case '--help': case '-h': opts.help = true; break;
       case '--version': case '-v': opts.version = true; break;
       default:
-        if (a.startsWith('--')) throw new UsageError(`Unknown option: ${a}`);
+        if (a.startsWith('--')) {
+          throw new UsageError(envLocale() === 'zh' ? `未知选项：${a}` : `Unknown option: ${a}`);
+        }
         positional.push(a);
     }
     i++;
   }
-  if (positional.length > 1) throw new UsageError('Expected exactly one repo argument.');
+  if (positional.length > 1) {
+    throw new UsageError(envLocale() === 'zh' ? '只需要一个仓库参数。' : 'Expected exactly one repo argument.');
+  }
   opts.slug = positional[0] ?? null;
   return opts;
 }
@@ -349,7 +359,7 @@ export async function main(argv) {
   if (opts.quiet) {
     const peers = benchmark
       ? (zh
-        ? ` · ${fmtTopZh(benchmark)}`
+        ? ` · ${fmtTopZh(benchmark)}（${facts.language ?? 'GitHub'} 同类）`
         : ` · ${fmtTopEn(benchmark)} of ${facts.language ?? 'GitHub'} peers`)
       : '';
     let deltaNote = '';

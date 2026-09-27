@@ -390,6 +390,36 @@ test('releases check: recent pushes but a stale latest release warns', () => {
   assert.match(c.detail.en, /days old while code was pushed/);
 });
 
+test('releases check: a DRAFT release is not a published release', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ pushed_at: '2026-09-20T00:00:00Z' });
+  // GitHub returns drafts (published_at: null) to authenticated callers;
+  // visitors see nothing, so scoring them as releases fabricates trust.
+  p.releases = [
+    { name: 'v2.0-draft', tag_name: 'v2.0', published_at: null },
+    { name: 'v1.0.0', tag_name: 'v1.0.0', published_at: '2025-01-01T00:00:00Z' },
+  ];
+  p.tags = [{ name: 'v1.0.0' }];
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  const c = runChecks(facts).find((x) => x.id === 'releases');
+  assert.equal(c.status, 'warn'); // only v1.0.0 is public, and it is stale
+  assert.match(c.detail.en, /published release\(s\)/);
+  assert.match(c.detail.en, /v1\.0\.0/); // latest PUBLISHED, not the draft
+});
+
+test('quickWins carry recoverable points for honest display', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ license: { spdx_id: 'MIT' }, description: 'x'.repeat(20), topics: ['a', 'b', 'c'], pushed_at: '2026-09-20T00:00:00Z' });
+  p.community = { files: { license: { name: 'MIT' } } };
+  p.readme = { encoding: 'base64', content: Buffer.from('# t\n\n## Install\n\n```bash\nnpm i t\n```\n' + 'x\n'.repeat(50)).toString('base64') };
+  const sc = scoreChecks(runChecks(buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') })));
+  assert.ok(sc.quickWins.length > 0);
+  for (const w of sc.quickWins) {
+    assert.equal(typeof w.recoverable, 'number');
+    assert.ok(w.recoverable > 0);
+  }
+});
+
 // --- honesty fixes from the red-team audit: refused data is never evidence ---
 
 test('license: repo-payload spdx survives a refused community profile', () => {

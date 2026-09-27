@@ -1,5 +1,6 @@
 // Scoring: pillar scores, overall grade, and prioritized quick wins.
 import { PILLARS } from './pillars.js';
+import { IMPACT_RANK } from './checks/helpers.js';
 
 export function grade(score) {
   if (score >= 90) return 'S';
@@ -18,9 +19,11 @@ const REMEDY_GROUP = {
 };
 
 // Fixes that are physically impossible on an archived repo (you can't push,
-// add templates, or enable discussions there).
-const UNFIXABLE_WHEN_ARCHIVED = (c) =>
-  c.id === 'recent-activity' || c.pillar === 'community';
+// add templates, or publish releases). Repo-settings fixes stay listed.
+const ARCHIVED_FIXABLE = new Set([
+  'description', 'topics', 'homepage', 'name-quality', 'discussions', 'language-focus',
+]);
+const UNFIXABLE_WHEN_ARCHIVED = (c) => !ARCHIVED_FIXABLE.has(c.id);
 
 export function scoreChecks(checks, { isArchived = false } = {}) {
   const pillars = PILLARS.map((p) => {
@@ -39,8 +42,9 @@ export function scoreChecks(checks, { isArchived = false } = {}) {
     : Math.round(active.reduce((a, p) => a + (p.score * p.weight), 0) / totalW);
 
   // Rank by the actual points a fix recovers (pillar weight / checks in pillar),
-  // with a small bonus for outright fails. Ties then reflect real score impact
-  // instead of definition order.
+  // with a small bonus for outright fails and impact as a tie-breaker. The
+  // recovered points ride along so renderers can show them instead of a
+  // static label that could contradict the ordering.
   const nByPillar = {};
   for (const p of pillars) nByPillar[p.id] = p.checks.length || 1;
   const weightById = Object.fromEntries(pillars.map((p) => [p.id, p.weight]));
@@ -48,22 +52,26 @@ export function scoreChecks(checks, { isArchived = false } = {}) {
   const candidates = checks
     .filter((c) => (c.status === 'fail' || c.status === 'warn') && c.fix)
     .filter((c) => !(isArchived && UNFIXABLE_WHEN_ARCHIVED(c)))
-    .map((c) => ({
-      c,
-      delta: (weightById[c.pillar] / nByPillar[c.pillar]) * (1 - (c.score ?? 0)),
-      rank:
-        (weightById[c.pillar] / nByPillar[c.pillar]) * (1 - (c.score ?? 0)) * 100 +
-        (c.status === 'fail' ? 15 : 0),
-    }))
+    .map((c) => {
+      const pts = (weightById[c.pillar] / nByPillar[c.pillar]) * (1 - (c.score ?? 0));
+      return {
+        c,
+        pts,
+        rank:
+          pts * 100 +
+          (c.status === 'fail' ? 15 : 0) +
+          (IMPACT_RANK[c.impact] ?? 0),
+      };
+    })
     .sort((a, b) => b.rank - a.rank);
 
   const quickWins = [];
   const seenGroups = new Set();
-  for (const { c } of candidates) {
+  for (const { c, pts } of candidates) {
     const group = REMEDY_GROUP[c.id] ?? c.id;
     if (seenGroups.has(group)) continue;
     seenGroups.add(group);
-    quickWins.push(c);
+    quickWins.push({ ...c, recoverable: Math.round(pts * 10) / 10 });
     if (quickWins.length === 3) break;
   }
 

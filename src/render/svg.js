@@ -100,6 +100,9 @@ export function renderSvg({ facts, scorecard, benchmark, locale, stale = false }
   const metaFit = fitText(metaRaw, 1020, 22, 14);
   const benchFit = fitText(benchLine, 1020, 20, 14);
 
+  const footerRaw = `why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx why-no-stars <owner/repo>`;
+  const footerFit = fitText(footerRaw, 1020, 19, 12);
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -129,7 +132,7 @@ export function renderSvg({ facts, scorecard, benchmark, locale, stale = false }
 
   ${pillarRows}
 
-  <text x="90" y="608" font-family="${FONT}" font-size="19" fill="#8b949e">why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx why-no-stars &lt;owner/repo&gt;</text>
+  <text x="90" y="608" font-family="${FONT}" font-size="${footerFit.size}" fill="#8b949e">${esc(footerFit.text)}</text>
 </svg>
 `;
 }

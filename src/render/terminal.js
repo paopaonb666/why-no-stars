@@ -103,12 +103,11 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
 
   // Quick wins
   if (scorecard.quickWins.length) {
-    push('  ' + bold(`⚡ ${T({ en: 'Top fixes', zh: '最值得先做的三件事' }, locale)}`));
-    const impactLabel = { high: ['HIGH', '高'], medium: ['MED', '中'], low: ['LOW', '低'] };
+    push('  ' + bold(`⚡ ${T({ en: 'Top fixes', zh: '最值得先做的几件事' }, locale)}`));
     scorecard.quickWins.forEach((c, i) => {
-      const [enL, zhL] = impactLabel[c.impact] ?? impactLabel.low;
-      const styled = c.impact === 'high' ? red(enL) : c.impact === 'medium' ? yellow(enL) : gray(enL);
-      push(`  ${bold(String(i + 1))}. [${locale === 'zh' ? zhL : styled}] ${bold(T(c.title, locale))}`);
+      const styled = c.impact === 'high' ? red : c.impact === 'medium' ? yellow : gray;
+      const pts = `+${(c.recoverable ?? 0).toFixed(1)} ${locale === 'zh' ? '分' : 'pts'}`;
+      push(`  ${bold(String(i + 1))}. [${styled(pts)}] ${bold(T(c.title, locale))}`);
       if (c.detail) push('     ' + gray(T(c.detail, locale)));
       if (c.fix) push('     ' + cyan('→ ' + T(c.fix, locale)));
     });
@@ -158,12 +157,14 @@ function useColorSafe() {
 // "more stars than 99–100%" for giants, "more stars than 0–90%" for the
 // 0-star floor — the wide range IS the honest answer. Callers append the peer group.
 export function fmtTopEn(b) {
+  if (b.upperPct < 1) return `more stars than ${b.upperPct.toFixed(1)}%`;
   const lo = Math.floor(b.lowerPct);
   const hi = Math.min(100, Math.ceil(b.upperPct));
   return `more stars than ${lo}–${hi}%`;
 }
 
 export function fmtTopZh(b) {
+  if (b.upperPct < 1) return `star 数超过同类仓库的 ${b.upperPct.toFixed(1)}%`;
   const lo = Math.floor(b.lowerPct);
   const hi = Math.min(100, Math.ceil(b.upperPct));
   return `star 数超过同类仓库的 ${lo}–${hi}%`;

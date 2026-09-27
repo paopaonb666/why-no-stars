@@ -78,7 +78,7 @@ export function communityChecks(f) {
         : { en: 'Discussions are off.', zh: '未开启。' },
       fix: {
         en: 'Enable Discussions and add an ideas/pinned welcome post. It gives shy users a place to land.',
-        zh: '开启 Discussions，发一个置顶欢迎帖。给不好意思开 issue 的用户一个落点。',
+        zh: '开启 Discussions，发一个置顶欢迎帖或征集想法的帖子。给不好意思开 issue 的用户一个落点。',
       },
       impact: 'low',
     })

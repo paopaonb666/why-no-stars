@@ -185,10 +185,15 @@ export function trustChecks(f) {
   );
 
   const releasesKnown = Array.isArray(f.releases);
+  // GitHub returns DRAFT releases (published_at: null) to authenticated
+  // callers — invisible to visitors, so they must not count as published.
+  const publishedReleases = releasesKnown
+    ? f.releases.filter((r) => r.publishedAt)
+    : null;
   // Code pushed recently but no release in 180+ days: the project is alive,
   // its releases aren't — that's a fixable trust leak, so warn (not fail).
   const DAY = 86400000;
-  const latestPublishedAt = releasesKnown && f.releases.length ? f.releases[0]?.publishedAt : null;
+  const latestPublishedAt = publishedReleases && publishedReleases.length ? publishedReleases[0]?.publishedAt : null;
   const latestMs = latestPublishedAt ? Date.parse(latestPublishedAt) : null;
   const pushedMs = f.pushedAt ? Date.parse(f.pushedAt) : null;
   const staleRelease = Boolean(
@@ -197,26 +202,27 @@ export function trustChecks(f) {
     f.now - pushedMs <= 90 * DAY
   );
   const staleDays = latestMs ? Math.round((f.now - latestMs) / DAY) : null;
+  const latestTag = publishedReleases && publishedReleases.length ? publishedReleases[0].tag : null;
   out.push(
     check('releases', 'trust', { en: 'Releases / tags', zh: 'Release / 标签' }, {
       status: inherited || !releasesKnown
         ? 'skip'
-        : f.releases.length >= 1
+        : publishedReleases.length >= 1
           ? staleRelease ? 'warn' : 'pass'
           : (f.tags?.length ?? 0) >= 1
             ? 'warn'
             : 'fail',
       detail: inherited
-        ? { en: 'Fork: releases are inherited from the parent repo.', zh: 'Fork：release 继承自父仓库，不计入评分。' }
+        ? { en: 'Fork: releases are inherited from the parent repo — not counted against you.', zh: 'Fork：release 继承自父仓库，不计入评分。' }
         : !releasesKnown
           ? { en: 'Release data unavailable (API refused) — not counted against you.', zh: 'release 数据不可用（API 拒绝）——不计入评分。' }
-          : f.releases.length
+          : publishedReleases.length
             ? staleRelease
               ? {
-                  en: `${f.releases.length} release(s), latest “${f.releases[0].tag}” — but it is ${staleDays} days old while code was pushed ${Math.round((f.now - pushedMs) / DAY)} days ago.`,
-                  zh: `有 ${f.releases.length} 个 release，最新 ${f.releases[0].tag}——但它已经是 ${staleDays} 天前的事，而代码 ${Math.round((f.now - pushedMs) / DAY)} 天前还在更新。`,
+                  en: `${publishedReleases.length} published release(s), latest “${latestTag}” — but it is ${staleDays} days old while code was pushed ${Math.round((f.now - pushedMs) / DAY)} days ago.`,
+                  zh: `有 ${publishedReleases.length} 个已发布的 release，最新 ${latestTag}——但它已经是 ${staleDays} 天前的事，而代码 ${Math.round((f.now - pushedMs) / DAY)} 天前还在更新。`,
                 }
-              : { en: `${f.releases.length} release(s), latest “${f.releases[0].tag}”.`, zh: `${f.releases.length} 个 release，最新 ${f.releases[0].tag}。` }
+              : { en: `${publishedReleases.length} published release(s), latest “${latestTag}”.`, zh: `${publishedReleases.length} 个已发布的 release，最新 ${latestTag}。` }
             : (f.tags?.length ?? 0)
               ? { en: `${f.tags.length} tag(s) but no published release.`, zh: `有 ${f.tags.length} 个 tag，但没有发布过 release。` }
               : { en: 'No tags and no releases.', zh: '没有 tag 也没有 release。' },
@@ -239,11 +245,9 @@ export function trustChecks(f) {
         ? 'skip'
         : f.contributors >= 2
           ? 'pass'
-          : f.contributors === 1
-            ? 'warn'
-            : 'warn',
+          : 'warn',
       detail: inherited
-        ? { en: 'Fork: contributor count is inherited from the parent repo.', zh: 'Fork：贡献者继承自父仓库，不计入评分。' }
+        ? { en: 'Fork: contributor count is inherited from the parent repo — not counted against you.', zh: 'Fork：贡献者继承自父仓库，不计入评分。' }
         : f.contributors === null
           ? { en: 'Contributor list unavailable via API (repository too large) — not counted against you.', zh: '贡献者列表因仓库过大无法通过 API 获取——不计入评分。' }
           : { en: `${f.contributors} contributor(s) visible.`, zh: `可见 ${f.contributors} 位贡献者。` },
@@ -265,7 +269,7 @@ export function trustChecks(f) {
           ? 'pass'
           : 'warn',
       detail: !tagsKnown || inherited
-        ? { en: inherited ? 'Fork: tags are inherited from the parent repo.' : 'Tag data unavailable — not counted against you.', zh: inherited ? 'Fork：tag 继承自父仓库，不计入评分。' : 'tag 数据不可用——不计入评分。' }
+        ? { en: inherited ? 'Fork: tags are inherited from the parent repo — not counted against you.' : 'Tag data unavailable — not counted against you.', zh: inherited ? 'Fork：tag 继承自父仓库，不计入评分。' : 'tag 数据不可用——不计入评分。' }
         : f.tags.length === 0
           ? { en: 'No tags to evaluate.', zh: '没有可评估的 tag。' }
           : { en: `${semverTags.length}/${f.tags.length} tags are version-shaped (X.Y or X.Y.Z).`, zh: `${semverTags.length}/${f.tags.length} 个 tag 符合版本格式（X.Y 或 X.Y.Z）。` },
