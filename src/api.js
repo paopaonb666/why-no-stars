@@ -118,8 +118,8 @@ export class GitHubClient {
       if (res.status === 401) throw new AuthError(path);
       if (res.status === 403 || res.status === 429) {
         if (remaining === '0' || res.status === 429) {
-          const reset = Number(res.headers.get('x-ratelimit-reset')) * 1000;
-          throw new RateLimitError(reset);
+          const reset = Number(res.headers.get('x-ratelimit-reset'));
+          throw new RateLimitError(Number.isFinite(reset) ? reset * 1000 : NaN);
         }
         // A 403 with quota left is usually a secondary rate limit or a resource
         // restriction — both clear on their own, so say so instead of a bare 403.
@@ -131,7 +131,14 @@ export class GitHubClient {
       }
       if (!res.ok) throw new ApiError(res.status, path);
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        // A 200 with a non-JSON body (proxy error page, truncated response)
+        // must not escape as a raw SyntaxError.
+        throw new ApiError(res.status, path, 'Response was not valid JSON (proxy or captive portal?).');
+      }
       const etag = res.headers.get('etag');
       if (etag && this.etagStore) this.etagStore.put(key, etag, data);
       this.cache.set(key, data);

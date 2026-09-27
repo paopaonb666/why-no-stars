@@ -291,6 +291,7 @@ async function probe(client, path) {
     const r = await client.get(path);
     return Array.isArray(r) ? r.map((f) => f.name) : r.name ?? true;
   } catch (err) {
+    if (err instanceof RateLimitError) throw err; // quota aborts the audit — never limp on
     if (err instanceof NotFoundError) return null; // 404 => genuinely absent
     return undefined; // other errors => we don't claim either way
   }
