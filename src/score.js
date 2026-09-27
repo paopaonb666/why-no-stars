@@ -42,6 +42,7 @@ export function scoreChecks(checks) {
 
   return {
     pillars,
+    allChecks: checks,
     overall,
     grade: grade(overall),
     quickWins,

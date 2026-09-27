@@ -40,7 +40,8 @@ function badPayloads() {
     releases: [],
     contributors: [],
     stargazers: [],
-    stargazersFallback: [],
+    stargazersFallback: [], // legacy key kept in fixtures; no longer read by src
+    events: null,
     packageJson: null,
     readme: null,
     workflows: { total_count: 0, workflows: [] },
@@ -93,6 +94,24 @@ test('parseReadme finds headings, images, install command and code fences', () =
   assert.equal(r.codeBlocks.length, 1);
 });
 
+test('images and badges inside code fences are not counted', () => {
+  const md = [
+    '# t',
+    '',
+    '```md',
+    '![not-rendered](https://img.shields.io/badge/fenced-x)',
+    '```',
+    '',
+    '![rendered](https://img.shields.io/badge/real-green)',
+    '',
+    'body text',
+  ].join('\n');
+  const r = parseReadme(md);
+  assert.equal(r.images.length, 1); // only the unfenced one
+  assert.equal(r.images[0].line, 7);
+  assert.equal(r.badges, 1);
+});
+
 test('findInstallLine supports many ecosystems', () => {
   assert.equal(findInstallLine(['pip install requests']), 1);
   assert.equal(findInstallLine(['$ cargo add foo']), 1);
@@ -138,10 +157,24 @@ test('momentum check: huge repo with capped pagination falls back to events feed
   assert.equal(facts.starSample, 'none');
 });
 
-test('momentum check: no data at all -> skip, never invent', () => {
+test('momentum check: partial last page (101–199 stars) is still a valid sample', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ stargazers_count: 150 });
+  // page 2 of a 150-star repo returns only 50 rows — that's the newest 50 stars
+  p.stargazers = Array.from({ length: 50 }, (_, i) => ({
+    starred_at: `2026-09-${String(10 + i).padStart(2, '0')}T00:00:00Z`,
+  }));
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  assert.equal(facts.starSample, 'lastpage');
+  const checks = runChecks(facts);
+  const c = checks.find((x) => x.id === 'recent-stars');
+  assert.equal(c.status, 'pass'); // 2026-09-10..26 all within 28 days of the 27th
+});
+
+test('momentum check: failed stargazers fetch with no events -> skip, never invent', () => {
   const p = badPayloads();
   p.repo = baseRepo({ stargazers_count: 69000 });
-  p.stargazers = [];
+  p.stargazers = null; // deep pagination 404s
   p.events = null; // events fetch also failed
   const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
   const checks = runChecks(facts);

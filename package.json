@@ -1,7 +1,7 @@
 {
   "name": "why-no-stars",
-  "version": "1.0.0",
-  "description": "Find out exactly why your repo isn't getting stars. 31 evidence-backed checks, ecosystem benchmark, shareable scorecard. Zero dependencies.",
+  "version": "1.0.1",
+  "description": "Find out exactly why your repo isn't getting stars. 32 evidence-backed checks, ecosystem benchmark, shareable scorecard. Zero dependencies.",
   "type": "module",
   "engines": {
     "node": ">=18"
@@ -11,7 +11,8 @@
     "why-no-stars": "bin.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepublishOnly": "npm test"
   },
   "files": [
     "bin.js",

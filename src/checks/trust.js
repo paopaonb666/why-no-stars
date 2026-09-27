@@ -110,7 +110,7 @@ export function trustChecks(f) {
   const semverTags = f.tags.filter((t) => /^v?\d+\.\d+\.\d+/.test(t));
   out.push(
     check('semver', 'trust', { en: 'Semver tags', zh: '语义化版本标签' }, {
-      status: f.tags.length === 0 ? 'skip' : semverTags.length / f.tags.length >= 0.6 ? 'pass' : semverTags.length ? 'warn' : 'warn',
+      status: f.tags.length === 0 ? 'skip' : semverTags.length / f.tags.length >= 0.6 ? 'pass' : 'warn',
       detail: f.tags.length
         ? { en: `${semverTags.length}/${f.tags.length} tags are semver-shaped.`, zh: `${semverTags.length}/${f.tags.length} 个 tag 符合语义化版本。` }
         : { en: 'No tags to evaluate.', zh: '没有可评估的 tag。' },

@@ -2,10 +2,18 @@
 
 export class RateLimitError extends Error {
   constructor(resetMs) {
-    const when = resetMs ? new Date(resetMs).toISOString() : 'unknown';
+    const when = Number.isFinite(resetMs) ? new Date(resetMs).toISOString() : 'soon';
     super(`GitHub API rate limit exceeded. Resets at ${when}.`);
     this.name = 'RateLimitError';
-    this.resetMs = resetMs ?? null;
+    this.resetMs = Number.isFinite(resetMs) ? resetMs : null;
+  }
+}
+
+export class AuthError extends Error {
+  constructor(path) {
+    super(`GitHub rejected the token (401) for ${path}.`);
+    this.name = 'AuthError';
+    this.path = path;
   }
 }
 
@@ -41,6 +49,7 @@ export class GitHubClient {
     if (remaining !== null) this.lastRemaining = Number(remaining);
 
     if (res.status === 404) throw new NotFoundError(path);
+    if (res.status === 401) throw new AuthError(path);
     if (res.status === 403 || res.status === 429) {
       if (remaining === '0' || res.status === 429) {
         const reset = Number(res.headers.get('x-ratelimit-reset')) * 1000;

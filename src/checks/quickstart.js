@@ -65,7 +65,8 @@ export function quickstartChecks(f) {
     })
   );
 
-  const docsHeading = readme?.headings?.some((h) => /docs?|documentation|guide|documentation|文档/i.test(h.text));
+  // \b guards keep "Docker deployment" / "Docusaurus" from matching "doc".
+  const docsHeading = readme?.headings?.some((h) => /\b(docs?|documentation|guide)\b|文档|指南/i.test(h.text));
   out.push(
     check('docs-link', 'quickstart', { en: 'Docs / guide pointer', zh: '文档 / 指南入口' }, {
       status: f.homepage || docsHeading ? 'pass' : 'warn',

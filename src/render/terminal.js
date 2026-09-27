@@ -1,10 +1,15 @@
 // Terminal scorecard renderer. CJK-width aware, color-aware.
-import { bold, dim, gray, green, yellow, red, cyan, padEnd, padStart, vwidth } from '../ansi.js';
+import { bold, dim, gray, green, yellow, red, cyan, padEnd, padStart, vwidth, useColor } from '../ansi.js';
 
 export function T(x, lang) {
   if (x == null) return '';
   if (typeof x === 'string') return x;
   return x[lang] ?? x.en ?? '';
+}
+
+export function fmtNum(n) {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return String(n);
 }
 
 const ICONS = {
@@ -23,11 +28,6 @@ function bar(score, width = 10) {
   return '█'.repeat(filled) + '░'.repeat(width - filled);
 }
 
-function fmtNum(n) {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
-  return String(n);
-}
-
 export function renderTerminal({ facts, scorecard, benchmark, locale }) {
   const f = facts;
   const out = [];
@@ -38,7 +38,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
   push(
     bold(f.fullName) +
       gray(`  ★ ${fmtNum(f.stars)}  ·  ${f.language ?? '?'}  ·  `) +
-      T({ en: 'pushed ', zh: '最近提交 ' }, locale) + gray(relativeDays(f.pushedAt, f.now))
+      T({ en: 'pushed ', zh: '最近提交 ' }, locale) + gray(relativeDays(f.pushedAt, f.now, locale))
   );
   push();
 
@@ -79,23 +79,26 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
   // Quick wins
   if (scorecard.quickWins.length) {
     push('  ' + bold(`⚡ ${T({ en: 'Top fixes', zh: '最值得先做的三件事' }, locale)}`));
+    const impactLabel = { high: ['HIGH', '高'], medium: ['MED', '中'], low: ['LOW', '低'] };
     scorecard.quickWins.forEach((c, i) => {
-      const impact = c.impact === 'high' ? red('HIGH') : c.impact === 'medium' ? yellow('MED ') : gray('LOW ');
-      push(`  ${bold(String(i + 1))}. [${impact}] ${bold(T(c.title, locale))}`);
+      const [enL, zhL] = impactLabel[c.impact] ?? impactLabel.low;
+      const styled = c.impact === 'high' ? red(enL) : c.impact === 'medium' ? yellow(enL) : gray(enL);
+      push(`  ${bold(String(i + 1))}. [${locale === 'zh' ? zhL : styled}] ${bold(T(c.title, locale))}`);
       if (c.detail) push('     ' + gray(T(c.detail, locale)));
       if (c.fix) push('     ' + cyan('→ ' + T(c.fix, locale)));
     });
     push();
   }
 
-  // All checks
-  push('  ' + bold(T({ en: `All checks (${scorecard.stats.total})`, zh: `全部检查项（${scorecard.stats.total}）` }, locale)));
+  // All checks — every check, including skips (skips are invisible in the
+  // pillar scores above but users deserve to see what wasn't evaluated).
+  push('  ' + bold(T({ en: `All checks (${scorecard.allChecks.length})`, zh: `全部检查项（${scorecard.allChecks.length}）` }, locale)));
   for (const p of scorecard.pillars) {
-    const mine = p.checks;
+    const mine = scorecard.allChecks.filter((c) => c.pillar === p.id);
     if (!mine.length) continue;
     push('  ' + gray(`· ${T(p.name, locale)}`));
     for (const c of mine) {
-      const icon = ICONS[c.status](useColorSafe());
+      const icon = ICONS[c.status](useColor());
       const status =
         c.status === 'pass'
           ? green(T({ en: 'PASS', zh: '通过' }, locale))
@@ -105,7 +108,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale }) {
               ? red(T({ en: 'FAIL', zh: '未过' }, locale))
               : gray(T({ en: 'SKIP', zh: '跳过' }, locale));
       push(`    ${icon} ${status}  ${T(c.title, locale)}`);
-      if (c.status !== 'pass' && c.detail) {
+      if (c.status !== 'pass' && c.status !== 'skip' && c.detail) {
         push('         ' + gray(T(c.detail, locale)));
       }
     }
@@ -141,13 +144,14 @@ export function fmtTopZh(b) {
   return `star 数超过同类仓库的 ${lo}–${hi}%`;
 }
 
-function relativeDays(iso, now) {
-  if (!iso) return '?';
+function relativeDays(iso, now, locale = 'en') {
+  const zh = locale === 'zh';
+  if (!iso) return zh ? '未知' : '?';
   const days = Math.max(0, Math.round((now - new Date(iso)) / 86400000));
-  if (days === 0) return 'today';
-  if (days === 1) return '1d ago';
-  if (days < 60) return `${days}d ago`;
+  if (days === 0) return zh ? '今天' : 'today';
+  if (days === 1) return zh ? '1 天前' : '1d ago';
+  if (days < 60) return zh ? `${days} 天前` : `${days}d ago`;
   const months = Math.round(days / 30);
-  if (months < 24) return `${months}mo ago`;
-  return `${Math.round(months / 12)}y ago`;
+  if (months < 24) return zh ? `${months} 个月前` : `${months}mo ago`;
+  return zh ? `${Math.round(months / 12)} 年前` : `${Math.round(months / 12)}y ago`;
 }

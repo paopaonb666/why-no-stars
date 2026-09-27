@@ -2,6 +2,8 @@
 // fetchPayloads  = network side (mockable / recordable for fixtures)
 // buildFacts     = pure transform (unit-testable)
 
+import { RateLimitError } from './api.js';
+
 const INSTALL_RE =
   /(?:^|[\s`(])(npm (?:i|install|ci)\b|pnpm (?:add|install)\b|yarn (?:add|install)\b|bun (?:add|install)\b|pip install\b|pip3 install\b|uv (?:pip install|add|tool install|run)\b|cargo (?:add|install)\b|go install\b|brew install\b|conda install\b|gem install\b|composer require\b|dotnet add package\b|docker (?:run|pull)\b|npx \S+|uvx \S+)/;
 
@@ -31,15 +33,17 @@ export function parseReadme(text) {
     if (!inFence) {
       const h = line.match(/^(#{1,6})\s+(.*)$/);
       if (h) headings.push({ level: h[1].length, text: h[2].trim(), line: n });
-    }
-    for (const m of line.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)) {
-      const url = m[1];
-      images.push({ url, line: n });
-      if (
-        n <= 45 &&
-        /(badge|shields\.io|travis|circleci|codecov|coveralls|npmjs|pypi|crates\.io|goreportcard|deepwiki)/i.test(url)
-      ) {
-        badges++;
+      // Images inside code fences are documentation of syntax, not rendered
+      // visuals — excluding them keeps hero-visual/badges honest.
+      for (const m of line.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)) {
+        const url = m[1];
+        images.push({ url, line: n });
+        if (
+          n <= 45 &&
+          /(badge|shields\.io|travis|circleci|codecov|coveralls|npmjs|pypi|crates\.io|goreportcard|deepwiki)/i.test(url)
+        ) {
+          badges++;
+        }
       }
     }
     if (/^(```|~~~)/.test(line.trim())) {
@@ -87,20 +91,19 @@ export function buildFacts(p, { now = new Date() } = {}) {
     ? p.contents.map((f) => ({ name: f.name, type: f.type }))
     : [];
 
-  const lastPage = Math.ceil((repo.stargazers_count ?? 0) / 100) || 1;
-  const stargazerTimestamps = (p.stargazers ?? [])
-    .map((s) => s.starred_at)
-    .filter(Boolean)
-    .sort();
-  // 'full': every star timestamp known (repo <= 100 stars)
-  // 'lastpage': newest 100 stars (deep pagination worked)
-  // 'events': stargazers pagination unavailable -> derived from the events feed
-  // 'none': no usable sample
+  // p.stargazers is the computed last page of the stargazers list:
+  //   null            -> the request failed (e.g. GitHub caps deep pagination)
+  //   []              -> the request succeeded but the page is empty
+  //   [ ...entries ]  -> the newest (stars - 100*(lastPage-1)) stars
+  const stargazerTimestamps = Array.isArray(p.stargazers)
+    ? p.stargazers.map((s) => s.starred_at).filter(Boolean).sort()
+    : [];
+  // 'full': every star timestamp known (repo <= 100 stars, page 1 = all stars)
+  // 'lastpage': the newest stars from the computed last page (any length)
+  // 'none': timestamps unavailable -> momentum falls back to the events feed
   let starSample = 'none';
-  if (repo.stargazers_count <= 100) {
-    if (stargazerTimestamps.length === repo.stargazers_count) starSample = 'full';
-  } else if (stargazerTimestamps.length >= 100) {
-    starSample = 'lastpage';
+  if (stargazerTimestamps.length >= 1) {
+    starSample = repo.stargazers_count <= 100 ? 'full' : 'lastpage';
   }
 
   const DAY = 86400000;
@@ -160,7 +163,12 @@ export function buildFacts(p, { now = new Date() } = {}) {
 }
 
 function ok(settled) {
-  return settled.status === 'fulfilled' ? settled.value : null;
+  if (settled.status === 'fulfilled') return settled.value;
+  // A rate limit mid-collection must abort the audit — otherwise every
+  // failed sub-fetch degrades into fabricated "missing license / no tests"
+  // evidence, which is the one thing a diagnostic tool must never do.
+  if (settled.reason instanceof RateLimitError) throw settled.reason;
+  return null;
 }
 
 export async function fetchPayloads(client, owner, name, { langOverride } = {}) {
@@ -195,7 +203,7 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     tags: ok(tags) ?? [],
     releases: ok(releases) ?? [],
     contributors: ok(contributors) ?? [],
-    stargazers: ok(stargazers) ?? [],
+    stargazers: ok(stargazers),
     events: ok(events),
     packageJson: ok(packageJson),
     readme: ok(readme),

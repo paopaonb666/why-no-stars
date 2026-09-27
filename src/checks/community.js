@@ -69,5 +69,19 @@ export function communityChecks(f) {
     })
   );
 
+  out.push(
+    check('security-policy', 'community', { en: 'Security policy', zh: '安全披露政策' }, {
+      status: files.security_policy ? 'pass' : 'warn',
+      detail: files.security_policy
+        ? { en: `Found: ${files.security_policy}`, zh: `找到：${files.security_policy}` }
+        : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },
+      fix: {
+        en: 'Add SECURITY.md describing how to report vulnerabilities privately (GitHub: Settings → Security → private vulnerability reporting).',
+        zh: '加 SECURITY.md，说明如何私密上报漏洞（GitHub 后台：Settings → Security → 开启私密漏洞报告）。',
+      },
+      impact: 'low',
+    })
+  );
+
   return out;
 }

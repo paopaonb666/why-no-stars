@@ -1,5 +1,5 @@
 // Shareable SVG scorecard (1200x630, OG-image sized, GitHub-dark palette).
-import { fmtTopEn, fmtTopZh } from './terminal.js';
+import { T, fmtNum, fmtTopEn, fmtTopZh } from './terminal.js';
 
 function esc(s) {
   return String(s)
@@ -9,22 +9,11 @@ function esc(s) {
     .replaceAll('"', '&quot;');
 }
 
-function fmtNum(n) {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
-  return String(n);
-}
-
 function colorFor(score) {
   if (score >= 80) return '#3fb950';
   if (score >= 60) return '#d29922';
   if (score >= 40) return '#db6d28';
   return '#f85149';
-}
-
-function T(x, lang) {
-  if (x == null) return '';
-  if (typeof x === 'string') return x;
-  return x[lang] ?? x.en ?? '';
 }
 
 export function renderSvg({ facts, scorecard, benchmark, locale }) {

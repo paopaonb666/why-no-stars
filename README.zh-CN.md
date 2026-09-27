@@ -4,13 +4,14 @@
 
 **精确诊断：你的 GitHub 仓库为什么没人 star。**
 
-31 项带证据的检查 · 同语言生态 star 分位对比 · 一张可分享的评分卡。
+32 项带证据的检查 · 同语言生态 star 分位对比 · 一张可分享的评分卡。
 零依赖、零配置、无需 API key。
 
 [![CI](https://github.com/paopaonb666/why-no-stars/actions/workflows/ci.yml/badge.svg)](https://github.com/paopaonb666/why-no-stars/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](./package.json)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
+[![Stars](https://img.shields.io/github/stars/paopaonb666/why-no-stars?style=social)](https://github.com/paopaonb666/why-no-stars/stargazers)
 
 <img src="./examples/got-scorecard.svg" alt="why-no-stars 评分卡示例" width="720">
 
@@ -36,7 +37,7 @@
   2. [HIGH] 首屏有截图 / GIF / Demo 图
      整个 README 没有一张图片
      → 把截图放到 README 前 ~30 行
-  3. [MED ] Issue 模板
+  3. [MED] Issue 模板
      没有 issue 模板
      → 加 .github/ISSUE_TEMPLATE
 ```
@@ -48,6 +49,9 @@
 ```bash
 # 免安装（直接从 GitHub 运行）
 npx github:paopaonb666/why-no-stars <用户名/仓库>
+
+# 发布到 npm 后更简单：
+npm i -g why-no-stars && wns <用户名/仓库>
 
 # 或克隆后运行
 git clone https://github.com/paopaonb666/why-no-stars && cd why-no-stars
@@ -75,7 +79,7 @@ wns 我的项目 --zh               # 中文输出（中文环境自动生效）
 | **曝光发现** | 10 | 搜相关关键词的人真的能搜到它吗？ |
 | **增长势头** | 10 | 最近还有新东西进来吗，还是完全静止？ |
 
-六大支柱共 **31 项检查**，每项都有：状态、证据、影响级别、具体修复动作。样例检查项：首屏安装命令、首屏配图、license、测试、CI、release 习惯、issue 模板、topics、star 增速、生态分位。
+六大支柱共 **32 项检查**，每项都有：状态、证据、影响级别、具体修复动作。样例检查项：首屏安装命令、首屏配图、license、测试、CI、release 习惯、issue 模板、topics、star 增速、生态分位。
 
 ## 别处没有的指标：你的生态分位
 

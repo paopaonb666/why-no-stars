@@ -4,7 +4,7 @@
 
 **Find out exactly why your repo isn't getting stars.**
 
-31 evidence-backed checks · ecosystem star-percentile benchmark · one shareable scorecard.
+32 evidence-backed checks · ecosystem star-percentile benchmark · one shareable scorecard.
 Zero dependencies. Zero config. No API key required.
 
 [![CI](https://github.com/paopaonb666/why-no-stars/actions/workflows/ci.yml/badge.svg)](https://github.com/paopaonb666/why-no-stars/actions/workflows/ci.yml)
@@ -39,7 +39,7 @@ A visitor lands on your repo, skims for a reason to care, and bounces. `why-no-s
   2. [HIGH] Hero image / GIF above the fold
      No image in the README at all.
      → Put a screenshot/GIF/demo within the first ~30 lines.
-  3. [MED ] Issue template
+  3. [MED] Issue template
      No issue template.
      → Add .github/ISSUE_TEMPLATE with bug + feature forms.
 ```
@@ -51,6 +51,9 @@ Every finding cites its evidence (`line 62`, `0 badges`, `last push 214 days ago
 ```bash
 # no install needed (runs from GitHub)
 npx github:paopaonb666/why-no-stars <owner/repo>
+
+# once published to npm, simply:
+npm i -g why-no-stars && wns <owner/repo>
 
 # or clone & run
 git clone https://github.com/paopaonb666/why-no-stars && cd why-no-stars
@@ -78,7 +81,7 @@ wns me/my-project --zh               # 中文报告
 | **Discoverability** | 10 | Can someone searching for this actually find it? |
 | **Momentum** | 10 | Is anything arriving, or is it perfectly still? |
 
-Across these pillars it runs **31 checks** — each with a status, evidence, an impact rating, and a concrete fix. Sample checks: install one-liner above the fold, hero image, license, tests, CI, release hygiene, issue templates, topics, star velocity, ecosystem percentile.
+Across these pillars it runs **32 checks** — each with a status, evidence, an impact rating, and a concrete fix. Sample checks: install one-liner above the fold, hero image, license, tests, CI, release hygiene, issue templates, topics, star velocity, ecosystem percentile.
 
 ## The benchmark nobody else gives you: your percentile
 

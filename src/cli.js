@@ -1,7 +1,7 @@
 // CLI entry: argument parsing, orchestration, friendly errors, exit codes.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { GitHubClient, RateLimitError, NotFoundError } from './api.js';
+import { GitHubClient, RateLimitError, AuthError, NotFoundError } from './api.js';
 import { collectFacts } from './collect.js';
 import { runChecks } from './checks/index.js';
 import { scoreChecks } from './score.js';
@@ -36,6 +36,10 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   --version        打印版本
   --help           打印帮助
 
+运行方式:
+  npx github:paopaonb666/why-no-stars <owner/repo>
+  npm i -g why-no-stars && wns <owner/repo>     # 发布到 npm 后可用
+
 示例:
   wns sindresorhus/got
   wns me/my-project --svg scorecard.svg --zh
@@ -63,6 +67,10 @@ Options:
   --version        print version
   --help           print help
 
+How to run:
+  npx github:paopaonb666/why-no-stars <owner/repo>
+  npm i -g why-no-stars && wns <owner/repo>     # once published to npm
+
 Examples:
   wns sindresorhus/got
   wns me/my-project --svg scorecard.svg --zh
@@ -71,22 +79,35 @@ Examples:
 Works without an API key. Set GITHUB_TOKEN to raise the limit from 60 to 5000 req/h.
 `);
 
-function parseArgs(argv) {
+export class UsageError extends Error {}
+
+export function parseArgs(argv) {
   const opts = {
     slug: null, svg: null, json: null, md: null, lang: null, token: null,
     noBenchmark: false, quiet: false, color: null, help: false, version: false,
     locale: null,
   };
   const positional = [];
-  for (let i = 0; i < argv.length; i++) {
+  const nextValue = (flag) => {
+    const v = argv[++i];
+    if (v === undefined || v.startsWith('--')) {
+      throw new UsageError(`Option ${flag} requires a value.`);
+    }
+    return v;
+  };
+  let i = 0;
+  while (i < argv.length) {
     const a = argv[i];
-    const next = () => argv[++i];
-    switch (a) {
-      case '--svg': opts.svg = next(); break;
-      case '--json': opts.json = next(); break;
-      case '--md': opts.md = next(); break;
-      case '--lang': opts.lang = next(); break;
-      case '--token': opts.token = next(); break;
+    // --flag=value inline syntax
+    const eq = a.indexOf('=');
+    const flag = a.startsWith('--') && eq > 2 ? a.slice(0, eq) : a;
+    const inline = a.startsWith('--') && eq > 2 ? a.slice(eq + 1) : undefined;
+    switch (flag) {
+      case '--svg': opts.svg = inline ?? nextValue('--svg'); break;
+      case '--json': opts.json = inline ?? nextValue('--json'); break;
+      case '--md': opts.md = inline ?? nextValue('--md'); break;
+      case '--lang': opts.lang = inline ?? nextValue('--lang'); break;
+      case '--token': opts.token = inline ?? nextValue('--token'); break;
       case '--zh': opts.locale = 'zh'; break;
       case '--en': opts.locale = 'en'; break;
       case '--no-benchmark': opts.noBenchmark = true; break;
@@ -99,13 +120,12 @@ function parseArgs(argv) {
         if (a.startsWith('--')) throw new UsageError(`Unknown option: ${a}`);
         positional.push(a);
     }
+    i++;
   }
   if (positional.length > 1) throw new UsageError('Expected exactly one repo argument.');
   opts.slug = positional[0] ?? null;
   return opts;
 }
-
-export class UsageError extends Error {}
 
 export function parseSlug(raw) {
   if (!raw) return null;
@@ -132,15 +152,22 @@ export async function main(argv) {
   try {
     opts = parseArgs(argv);
   } catch (err) {
-    console.error(String(err.message));
-    console.error("Try 'wns --help'.");
+    console.error(`error: ${err.message}`);
+    console.error("Run with --help for usage.");
     return 1;
   }
 
   if (opts.version) { console.log(`why-no-stars v${VERSION}`); return 0; }
-  if (opts.help || !opts.slug) {
-    console.log(HELP(detectLocale(opts)));
-    return opts.help ? 0 : 1;
+
+  const locale = detectLocale(opts);
+  const zh = locale === 'zh';
+
+  if (opts.help) { console.log(HELP(locale)); return 0; }
+
+  if (!opts.slug) {
+    console.error(zh ? 'error: 缺少 <owner/repo> 参数。' : 'error: missing <owner/repo>.');
+    console.error("Run with --help for usage.");
+    return 1;
   }
 
   const slug = parseSlug(opts.slug);
@@ -150,13 +177,13 @@ export async function main(argv) {
   }
 
   if (opts.color) setColorMode(opts.color);
-  const locale = detectLocale(opts);
-  const zh = locale === 'zh';
 
   const client = new GitHubClient({ token: opts.token });
+  const say = (msg) => { if (!opts.quiet) console.error(dim(msg)); };
 
   let facts;
   try {
+    say(zh ? `→ 正在采集仓库数据：${slug.owner}/${slug.name} …` : `→ collecting repo data: ${slug.owner}/${slug.name} …`);
     facts = await collectFacts(client, slug.owner, slug.name, { langOverride: opts.lang });
   } catch (err) {
     if (err instanceof RateLimitError) {
@@ -166,6 +193,14 @@ export async function main(argv) {
           : `GitHub API rate limited. ${err.message}\nSet GITHUB_TOKEN to raise the limit: https://github.com/settings/tokens`
       );
       return 2;
+    }
+    if (err instanceof AuthError) {
+      console.error(
+        zh
+          ? `GitHub 拒绝了你的 token（401）。检查 --token 参数或 GITHUB_TOKEN 环境变量是否有效、未过期。`
+          : `GitHub rejected the token (401). Check that --token / GITHUB_TOKEN is valid and not expired.`
+      );
+      return 1;
     }
     if (err instanceof NotFoundError) {
       console.error(
@@ -178,27 +213,36 @@ export async function main(argv) {
     throw err;
   }
 
+  say(zh ? '→ 正在体检并评分 …' : '→ running checks and scoring …');
   const checks = runChecks(facts);
   const scorecard = scoreChecks(checks);
 
   let benchmark = null;
   if (!opts.noBenchmark) {
+    say(zh ? '→ 正在统计同类生态分布（6 次 API 调用）…' : '→ benchmarking against the language ecosystem (6 API calls) …');
     benchmark = await starPercentile(client, { stars: facts.stars, language: facts.language });
+    if (!benchmark) {
+      console.error(
+        dim(zh
+          ? '· 生态分位已跳过（搜索接口限流）——配置 GITHUB_TOKEN 后可得生态对比。'
+          : '· benchmark skipped (search API rate-limited) — set GITHUB_TOKEN to get the ecosystem percentile.')
+      );
+    }
   }
 
   if (opts.quiet) {
-    const pct = benchmark
+    const peers = benchmark
       ? (zh
         ? ` · ${fmtTopZh(benchmark)}`
-        : ` · ${fmtTopEn(benchmark)} of peers`)
+        : ` · ${fmtTopEn(benchmark)} of ${facts.language ?? 'GitHub'} peers`)
       : '';
-    console.log(`${facts.fullName}: ${scorecard.overall}/100 (${scorecard.grade})${pct}`);
+    console.log(`${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}`);
   } else {
     console.log(renderTerminal({ facts, scorecard, benchmark, locale }));
     console.error(
       dim(zh
-        ? `\n评分只是镜子，不是判决。star 不是玄学，是前 10 秒的功夫。`
-        : `\nA score is a mirror, not a verdict. Stars aren't luck — they're the first 10 seconds, done right.`)
+        ? `\n改完最值得做的几项，再跑一次——方法就这么多。`
+        : `\nFix the top items, then run it again. That's the whole method.`)
     );
   }
 

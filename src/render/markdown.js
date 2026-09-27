@@ -1,6 +1,9 @@
 // Markdown report renderer (for pasting into issues / PRs / discussions).
 import { T, fmtTopEn, fmtTopZh } from './terminal.js';
 
+// Pipe a cell's content so it can't break out of the table structure.
+const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+
 export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
   const f = facts;
   const zh = locale === 'zh';
@@ -47,9 +50,12 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
   out.push(zh ? '| 状态 | 检查项 | 证据 |' : '| Status | Check | Evidence |');
   out.push('|---|---|---|');
   for (const p of scorecard.pillars) {
-    for (const c of p.checks) {
+    const mine = scorecard.allChecks.filter((c) => c.pillar === p.id);
+    if (!mine.length) continue;
+    out.push(`| | **${cell(T(p.name, locale))}** | |`);
+    for (const c of mine) {
       const icon = { pass: '✅', warn: '⚠️', fail: '❌', skip: '➖' }[c.status];
-      out.push(`| ${icon} | ${T(c.title, locale)} | ${T(c.detail, locale) || '—'} |`);
+      out.push(`| ${icon} | ${cell(T(c.title, locale))} | ${cell(T(c.detail, locale)) || '—'} |`);
     }
   }
   out.push('');

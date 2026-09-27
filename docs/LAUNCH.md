@@ -28,7 +28,7 @@ Order matters: developer audiences first (forgiving, will file bug reports), gen
 | Show HN | "Show HN: Why-no-stars – Find out why your repo isn't getting stars" | Post 8–10 AM ET. Lead with the got/express audit: "even 15k-star repos fail 3 checks". Reply to every comment for 24h. |
 | Reddit r/SideProject + r/opensource | Story angle: "I audited 50 neglected repos with my CLI. The same 3 fixes came up every time." | The aggregate finding IS the content. Include the scorecards. |
 | V2EX 分享创造节点 | 中文帖：用中文 README 的截图，标题《我写了个工具，诊断你的 GitHub 仓库为什么没人 star》 | 中文社区是第一波 star 主力。诚实标注"启发式规则，不是 AI"。 |
-| 掘金 / 知乎 | 教程 angle：「你的 README 的前 10 秒：31 项检查里暴露的问题」 | 把 Top fixes 当内容写，工具是文末的 CTA。 |
+| 掘金 / 知乎 | 教程 angle：「你的 README 的前 10 秒：32 项检查里暴露的问题」 | 把 Top fixes 当内容写，工具是文末的 CTA。 |
 | X/Twitter | Thread: 3 famous repos audited, 3 real findings each | Every tweet gets one scorecard image. OG-size is designed for this. |
 | 即刻 / 微信开发者群 | 一句话 + 评分卡图 | Groups reward工具+图, punish links alone. |
 

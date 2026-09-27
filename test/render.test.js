@@ -27,7 +27,7 @@ function payloads() {
     releases: [{ name: 'v1', tag_name: 'v1.2.3', published_at: '2026-09-01T00:00:00Z' }],
     contributors: [{ login: 'a' }, { login: 'b' }],
     stargazers: Array.from({ length: 5 }, (_, i) => ({ starred_at: `2026-09-1${i + 5}T00:00:00Z` })),
-    stargazersFallback: [],
+    events: [],
     packageJson: null,
     readme: {
       encoding: 'base64',

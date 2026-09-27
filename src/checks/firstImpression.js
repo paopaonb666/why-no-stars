@@ -100,7 +100,7 @@ export function firstImpressionChecks(f) {
   const badges = f.readme.badges;
   out.push(
     check('badges', 'first-impression', { en: 'Badges (1–12)', zh: '徽章（1–12 个）' }, {
-      status: badges >= 1 && badges <= 12 ? 'pass' : badges === 0 ? 'warn' : 'warn',
+      status: badges >= 1 && badges <= 12 ? 'pass' : 'warn',
       detail: { en: `${badges} badge(s) near the top`, zh: `顶部附近有 ${badges} 个徽章` },
       fix: {
         en: badges === 0
