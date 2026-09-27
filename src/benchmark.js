@@ -17,12 +17,13 @@ export const BUCKETS = [
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function starPercentile(client, { stars, language }) {
+// staggerMs is injectable so tests can run without the real 300ms pacing.
+export async function starPercentile(client, { stars, language, staggerMs = 300 }) {
   const langQ = language ? `+language:${encodeURIComponent(language)}` : '';
   const counts = [];
   try {
     for (const [i, b] of BUCKETS.entries()) {
-      if (i > 0) await sleep(300); // GitHub's search secondary rate limit fires on rapid bursts
+      if (i > 0 && staggerMs > 0) await sleep(staggerMs); // GitHub's search secondary rate limit fires on rapid bursts
       const r = await client.getSearch(
         `/search/repositories?q=${encodeURIComponent(b.q)}${langQ}&per_page=1`
       );

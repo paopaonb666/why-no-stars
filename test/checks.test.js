@@ -218,3 +218,22 @@ test('momentum check: failed stargazers fetch with no events -> skip, never inve
   const c = checks.find((x) => x.id === 'recent-stars');
   assert.equal(c.status, 'skip');
 });
+
+test('community checks: profile fetch failed -> honest skip, never a fabricated absence', () => {
+  const facts = buildFacts(badPayloads(), { now: new Date('2026-09-27T00:00:00Z') });
+  const checks = runChecks(facts);
+  for (const id of ['issue-template', 'pr-template', 'contributing', 'coc', 'security-policy']) {
+    assert.equal(checks.find((c) => c.id === id).status, 'skip', id);
+  }
+  // discussions comes from the repo payload (always present) — still evaluated
+  assert.equal(checks.find((c) => c.id === 'discussions').status, 'warn');
+});
+
+test('community checks: probe knowledge survives a null community profile', () => {
+  const p = badPayloads();
+  p.securityProbe = 'known-present'; // probe confirmed SECURITY.md exists
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  const checks = runChecks(facts);
+  assert.equal(checks.find((c) => c.id === 'security-policy').status, 'pass');
+  assert.equal(checks.find((c) => c.id === 'issue-template').status, 'skip'); // still unknown
+});

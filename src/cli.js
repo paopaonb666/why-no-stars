@@ -1,7 +1,7 @@
 // CLI entry: argument parsing, orchestration, friendly errors, exit codes.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { GitHubClient, RateLimitError, AuthError, NotFoundError } from './api.js';
+import { GitHubClient, RateLimitError, AuthError, NotFoundError, NetworkError } from './api.js';
 import { collectFacts } from './collect.js';
 import { runChecks } from './checks/index.js';
 import { scoreChecks } from './score.js';
@@ -29,7 +29,7 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   --en             用英文输出
   --lang <lang>    覆盖自动识别的主语言（用于生态分位对比）
   --token <token>  GitHub token（默认读 GITHUB_TOKEN / GH_TOKEN 环境变量）
-  --no-benchmark   跳过生态分位对比（省 6 次 API 调用）
+  --no-benchmark   跳过生态分位对比（省 7 次 API 调用）
   --quiet          只打印一行总分
   --color          强制彩色输出
   --no-color       禁用彩色输出
@@ -208,6 +208,14 @@ export async function main(argv) {
       );
       return 1;
     }
+    if (err instanceof NetworkError) {
+      console.error(
+        zh
+          ? `网络请求失败：${err.message}\n请检查网络连接后重试（公司代理或防火墙可能拦截 api.github.com）。`
+          : `Network request failed: ${err.message}\nCheck your connection and retry (a corporate proxy or firewall may block api.github.com).`
+      );
+      return 1;
+    }
     throw err;
   }
 
@@ -244,10 +252,24 @@ export async function main(argv) {
     );
   }
 
-  if (opts.svg) writeFileSafe(opts.svg, renderSvg({ facts, scorecard, benchmark, locale }));
-  if (opts.md) writeFileSafe(opts.md, renderMarkdown({ facts, scorecard, benchmark, locale }));
+  // Per-file emit: a bad path in --md must not swallow the --svg output,
+  // and a write failure must exit non-zero instead of dumping a stack.
+  let writeFailed = false;
+  const emit = (file, content) => {
+    try {
+      writeFileSafe(file, content);
+    } catch (err) {
+      writeFailed = true;
+      console.error(
+        zh ? `无法写入输出文件 ${file}：${err.message}` : `Failed to write output file ${file}: ${err.message}`
+      );
+    }
+  };
+
+  if (opts.svg) emit(opts.svg, renderSvg({ facts, scorecard, benchmark, locale }));
+  if (opts.md) emit(opts.md, renderMarkdown({ facts, scorecard, benchmark, locale }));
   if (opts.json) {
-    writeFileSafe(opts.json, JSON.stringify({
+    emit(opts.json, JSON.stringify({
       repo: {
         fullName: facts.fullName, stars: facts.stars, language: facts.language,
         description: facts.description, topics: facts.topics, pushedAt: facts.pushedAt,
@@ -271,5 +293,5 @@ export async function main(argv) {
     }, null, 2));
   }
 
-  return 0;
+  return writeFailed ? 1 : 0;
 }

@@ -3,16 +3,26 @@ import { check } from './helpers.js';
 
 export function communityChecks(f) {
   const out = [];
+  // Null means the community-profile fetch was refused — we know nothing about
+  // these files, and claiming "missing" would fabricate evidence.
+  const noData = (f.community ?? null) === null;
   const files = f.community?.files ?? {};
+  const UNAVAILABLE = {
+    en: 'Community profile unavailable (API refused) — not counted against you.',
+    zh: '社区资料接口不可用（API 拒绝）——不计入评分。',
+  };
 
+  const templateUnknown = noData && !f.issueTemplateKnown;
   out.push(
     check('issue-template', 'community', { en: 'Issue template', zh: 'Issue 模板' }, {
-      status: files.issue_template || f.issueTemplateKnown ? 'pass' : 'warn',
-      detail: files.issue_template
-        ? { en: `Found: ${files.issue_template}`, zh: `找到：${files.issue_template}` }
-        : f.issueTemplateKnown
-          ? { en: 'Found in .github/ISSUE_TEMPLATE (not surfaced by the community profile).', zh: '在 .github/ISSUE_TEMPLATE 中找到（community profile 未收录）。' }
-          : { en: 'No issue template.', zh: '没有 issue 模板。' },
+      status: templateUnknown ? 'skip' : files.issue_template || f.issueTemplateKnown ? 'pass' : 'warn',
+      detail: templateUnknown
+        ? UNAVAILABLE
+        : files.issue_template
+          ? { en: `Found: ${files.issue_template}`, zh: `找到：${files.issue_template}` }
+          : f.issueTemplateKnown
+            ? { en: 'Found in .github/ISSUE_TEMPLATE (not surfaced by the community profile).', zh: '在 .github/ISSUE_TEMPLATE 中找到（community profile 未收录）。' }
+            : { en: 'No issue template.', zh: '没有 issue 模板。' },
       fix: {
         en: 'Add .github/ISSUE_TEMPLATE with bug + feature forms. Triage cost drops, signal rises.',
         zh: '加 .github/ISSUE_TEMPLATE（bug + feature 表单）。筛选成本下降，有效信号上升。',
@@ -23,10 +33,12 @@ export function communityChecks(f) {
 
   out.push(
     check('pr-template', 'community', { en: 'PR template', zh: 'PR 模板' }, {
-      status: files.pull_request_template ? 'pass' : 'warn',
-      detail: files.pull_request_template
-        ? { en: `Found: ${files.pull_request_template}`, zh: `找到：${files.pull_request_template}` }
-        : { en: 'No PR template.', zh: '没有 PR 模板。' },
+      status: noData ? 'skip' : files.pull_request_template ? 'pass' : 'warn',
+      detail: noData
+        ? UNAVAILABLE
+        : files.pull_request_template
+          ? { en: `Found: ${files.pull_request_template}`, zh: `找到：${files.pull_request_template}` }
+          : { en: 'No PR template.', zh: '没有 PR 模板。' },
       fix: { en: 'Add a short PULL_REQUEST_TEMPLATE.md (what/why/how tested).', zh: '加一个简短的 PULL_REQUEST_TEMPLATE.md（改了什么/为什么/怎么测）。' },
       impact: 'low',
     })
@@ -34,10 +46,12 @@ export function communityChecks(f) {
 
   out.push(
     check('contributing', 'community', { en: 'CONTRIBUTING guide', zh: 'CONTRIBUTING 指南' }, {
-      status: files.contributing ? 'pass' : 'warn',
-      detail: files.contributing
-        ? { en: `Found: ${files.contributing}`, zh: `找到：${files.contributing}` }
-        : { en: 'No CONTRIBUTING.md.', zh: '没有 CONTRIBUTING.md。' },
+      status: noData ? 'skip' : files.contributing ? 'pass' : 'warn',
+      detail: noData
+        ? UNAVAILABLE
+        : files.contributing
+          ? { en: `Found: ${files.contributing}`, zh: `找到：${files.contributing}` }
+          : { en: 'No CONTRIBUTING.md.', zh: '没有 CONTRIBUTING.md。' },
       fix: {
         en: 'Add CONTRIBUTING.md: how to set up dev env, run tests, and open a PR. Lower the barrier and outsiders appear.',
         zh: '加 CONTRIBUTING.md：怎么搭环境、跑测试、提 PR。门槛降低，外部贡献者才会出现。',
@@ -62,23 +76,28 @@ export function communityChecks(f) {
 
   out.push(
     check('coc', 'community', { en: 'Code of conduct', zh: '行为准则' }, {
-      status: files.code_of_conduct ? 'pass' : 'warn',
-      detail: files.code_of_conduct
-        ? { en: `Found: ${files.code_of_conduct}`, zh: `找到：${files.code_of_conduct}` }
-        : { en: 'No code of conduct.', zh: '没有行为准则文件。' },
+      status: noData ? 'skip' : files.code_of_conduct ? 'pass' : 'warn',
+      detail: noData
+        ? UNAVAILABLE
+        : files.code_of_conduct
+          ? { en: `Found: ${files.code_of_conduct}`, zh: `找到：${files.code_of_conduct}` }
+          : { en: 'No code of conduct.', zh: '没有行为准则文件。' },
       fix: { en: 'Add a CODE_OF_CONDUCT.md (GitHub provides a template in one click).', zh: '加一个 CODE_OF_CONDUCT.md（GitHub 后台一键模板）。' },
       impact: 'low',
     })
   );
 
+  const securityUnknown = noData && !f.securityPolicyKnown;
   out.push(
     check('security-policy', 'community', { en: 'Security policy', zh: '安全披露政策' }, {
-      status: files.security_policy || f.securityPolicyKnown ? 'pass' : 'warn',
-      detail: files.security_policy
-        ? { en: `Found: ${files.security_policy}`, zh: `找到：${files.security_policy}` }
-        : f.securityPolicyKnown
-          ? { en: 'Found SECURITY.md (not surfaced by the community profile).', zh: '找到 SECURITY.md（community profile 未收录）。' }
-          : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },
+      status: securityUnknown ? 'skip' : files.security_policy || f.securityPolicyKnown ? 'pass' : 'warn',
+      detail: securityUnknown
+        ? UNAVAILABLE
+        : files.security_policy
+          ? { en: `Found: ${files.security_policy}`, zh: `找到：${files.security_policy}` }
+          : f.securityPolicyKnown
+            ? { en: 'Found SECURITY.md (not surfaced by the community profile).', zh: '找到 SECURITY.md（community profile 未收录）。' }
+            : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },
       fix: {
         en: 'Add SECURITY.md describing how to report vulnerabilities privately (GitHub: Settings → Security → private vulnerability reporting).',
         zh: '加 SECURITY.md，说明如何私密上报漏洞（GitHub 后台：Settings → Security → 开启私密漏洞报告）。',

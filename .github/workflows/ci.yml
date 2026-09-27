@@ -5,6 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only token for CI; concurrent pushes cancel superseded runs.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:

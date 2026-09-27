@@ -2,7 +2,7 @@
 // fetchPayloads  = network side (mockable / recordable for fixtures)
 // buildFacts     = pure transform (unit-testable)
 
-import { RateLimitError } from './api.js';
+import { RateLimitError, NotFoundError } from './api.js';
 
 const INSTALL_RE =
   /(?:^|[\s`(])(npm (?:i|install|ci)\b|pnpm (?:add|install)\b|yarn (?:add|install)\b|bun (?:add|install)\b|pip install\b|pip3 install\b|uv (?:pip install|add|tool install|run)\b|cargo (?:add|install)\b|go install\b|brew install\b|conda install\b|gem install\b|composer require\b|dotnet add package\b|docker (?:run|pull)\b|npx \S+|uvx \S+)/;
@@ -98,6 +98,13 @@ export function normalizeName(s) {
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
+// Did the community profile / contents probe confirm the file exists?
+// Handles the three fetchPayloads states ('known-present'/'known-absent'/
+// 'unknown') plus legacy fixture shapes (array of names, filename, true).
+const probeFound = (v) =>
+  v === 'known-present' || Array.isArray(v) || v === true ||
+  (typeof v === 'string' && v !== 'known-absent' && v !== 'unknown');
+
 export function buildFacts(p, { now = new Date() } = {}) {
   const repo = p.repo;
   const readmeText = p.readme ? decodeBase64File(p.readme) : null;
@@ -174,8 +181,8 @@ export function buildFacts(p, { now = new Date() } = {}) {
       ? p.releases.map((r) => ({ name: r.name ?? r.tag_name, tag: r.tag_name, publishedAt: r.published_at }))
       : null,
     contributors: Array.isArray(p.contributors) ? p.contributors.length : null,
-    issueTemplateKnown: p.issueTemplateProbe === 'known-present' || Array.isArray(p.issueTemplateProbe),
-    securityPolicyKnown: p.securityProbe === 'known-present' || p.securityProbe != null,
+    issueTemplateKnown: probeFound(p.issueTemplateProbe),
+    securityPolicyKnown: probeFound(p.securityProbe),
     stargazerTimestamps,
     starSample,
     recentStarEvents28,
@@ -222,10 +229,29 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     client.get(`/repos/${full}/events?per_page=100`),
   ]);
 
+  // The community-profile endpoint is known to lag reality (issue templates and
+  // SECURITY.md missing from it for repos that have them). When it claims
+  // absence, cheap contents probes verify before claiming absence. Probe states:
+  //   'known-present' — file/dir confirmed to exist
+  //   'known-absent'  — probe got a 404: genuinely absent
+  //   'unknown'       — profile fetch failed (or probe errored): claim nothing
+  const communityPayload = ok(community);
+  const needsTemplateProbe = Boolean(communityPayload) && !communityPayload?.files?.issue_template;
+  const needsSecurityProbe = Boolean(communityPayload) && !communityPayload?.files?.security_policy;
+  const [templateProbeResult, securityProbeResult] = await Promise.all([
+    needsTemplateProbe ? probe(client, `/repos/${full}/contents/.github/ISSUE_TEMPLATE`) : undefined,
+    needsSecurityProbe ? probe(client, `/repos/${full}/contents/SECURITY.md`) : undefined,
+  ]);
+  const probeState = (profileHas, probeResult) => {
+    if (profileHas) return 'known-present';
+    if (probeResult === undefined) return 'unknown'; // probe skipped or errored
+    return probeResult == null ? 'known-absent' : 'known-present';
+  };
+
   return {
     repo,
     languages: ok(languages) ?? {},
-    community: ok(community),
+    community: communityPayload,
     contents: ok(contents) ?? [],
     tags: ok(tags),
     releases: ok(releases),
@@ -235,12 +261,8 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     packageJson: ok(packageJson),
     readme: ok(readme),
     workflows: ok(workflows) ?? { total_count: 0, workflows: [] },
-    issueTemplateProbe: ok(community) && !ok(community)?.files?.issue_template
-      ? await probe(client, `/repos/${full}/contents/.github/ISSUE_TEMPLATE`)
-      : 'known-present',
-    securityProbe: ok(community) && !ok(community)?.files?.security_policy
-      ? await probe(client, `/repos/${full}/contents/SECURITY.md`)
-      : 'known-present',
+    issueTemplateProbe: probeState(communityPayload?.files?.issue_template, templateProbeResult),
+    securityProbe: probeState(communityPayload?.files?.security_policy, securityProbeResult),
     langOverride: langOverride ?? null,
   };
 }
@@ -252,8 +274,9 @@ async function probe(client, path) {
   try {
     const r = await client.get(path);
     return Array.isArray(r) ? r.map((f) => f.name) : r.name ?? true;
-  } catch {
-    return null; // 404 => genuinely absent; other errors => we don't claim either way
+  } catch (err) {
+    if (err instanceof NotFoundError) return null; // 404 => genuinely absent
+    return undefined; // other errors => we don't claim either way
   }
 }
 
