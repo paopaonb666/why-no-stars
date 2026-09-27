@@ -2,11 +2,28 @@
 import { T, fmtNum, fmtTopEn, fmtTopZh } from './terminal.js';
 import { sanitize } from '../ansi.js';
 
-// Pipe a cell's content so it can't break out of the table structure. Escape
-// backslashes FIRST, or a literal "\|" survives as an escaped pipe and still
-// splits the row. Also strip control/escape sequences from repo-controlled text.
+// Pipe a cell's content so it can't break out of the table structure: escape
+// backslashes FIRST (else "\|" survives as an escaped pipe), then backticks,
+// pipes, and finally HTML-significant chars — GitHub renders table cells as
+// inline markdown/HTML, so a raw "<tag>" in repo text would vanish (or run).
+// Also strip control/escape sequences from repo-controlled text.
 const cell = (s) =>
-  sanitize(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  sanitize(s ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\|/g, '\\|')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r?\n/g, ' ');
+
+// List items outside tables: same HTML/backtick hazards, no pipes to escape.
+const mdInline = (s) =>
+  sanitize(s ?? '')
+    .replace(/`/g, '\\`')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 
 export function renderMarkdown({ facts, scorecard, benchmark, locale, stale = false }) {
   const f = facts;
@@ -33,6 +50,13 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale, stale = fa
         ? `**生态分位**：${fmtTopZh(benchmark)}（${f.language ?? 'GitHub'}）`
         : `**Ecosystem**: ${fmtTopEn(benchmark)} of ${f.language ?? 'GitHub'} repos`
     );
+    // Tiny-repo context, matching the terminal/SVG line.
+    if (f.stars <= 9 && benchmark.share0 > 50) {
+      const ml = T(benchmark.medianLabel, locale);
+      out.push(zh
+        ? `*${benchmark.share0.toFixed(0)}% 的同类仓库为 0 star，中位数仓库：${ml}*`
+        : `*${benchmark.share0.toFixed(0)}% of peers have 0 stars; median peer: ${ml}*`);
+    }
   }
   out.push('');
   out.push(zh ? '## 支柱得分' : '## Pillars');
@@ -50,8 +74,8 @@ export function renderMarkdown({ facts, scorecard, benchmark, locale, stale = fa
     out.push('');
     scorecard.quickWins.forEach((c, i) => {
       out.push(`${i + 1}. **${T(c.title, locale)}** \`${c.impact}\` \`${'+' + (c.recoverable ?? 0).toFixed(1)} pts\``);
-      if (c.detail) out.push(`   - ${zh ? '证据' : 'Evidence'}: ${T(c.detail, locale)}`);
-      if (c.fix) out.push(`   - ${zh ? '修复' : 'Fix'}: ${T(c.fix, locale)}`);
+      if (c.detail) out.push(`   - ${zh ? '证据' : 'Evidence'}: ${mdInline(T(c.detail, locale))}`);
+      if (c.fix) out.push(`   - ${zh ? '修复' : 'Fix'}: ${mdInline(T(c.fix, locale))}`);
     });
     out.push('');
   }

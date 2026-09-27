@@ -109,7 +109,7 @@ test('repo-controlled escape sequences never reach the rendered reports', () => 
   }
   // the visible text survives (markdown shows evidence rows for every check)
   assert.ok(
-    renderMarkdown({ facts, scorecard, benchmark: null, locale: 'en' }).includes('A demo <repo> & more')
+    renderMarkdown({ facts, scorecard, benchmark: null, locale: 'en' }).includes('A demo &lt;repo&gt; &amp; more')
   );
 });
 

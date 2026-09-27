@@ -55,9 +55,11 @@ export function stripAnsi(s) {
 // Repo-controlled text (descriptions, README strings, tag names) must never
 // carry terminal escape sequences or control chars into a report — a crafted
 // description could otherwise repaint the terminal. ANSI sequences are removed
-// whole; any other control char becomes a plain space.
+// whole (including 8-bit CSI); other C0/C1 controls, non-characters, and lone
+// surrogates become spaces / are dropped, keeping SVG output valid XML 1.0.
 export function sanitize(s) {
   return String(s)
     .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')
-    .replace(/[\u0000-\u001f\u007f]/g, ' ');
+    .replace(/[\u0000-\u001f\u007f-\u009f\uFFFE\uFFFF]/g, ' ')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
 }

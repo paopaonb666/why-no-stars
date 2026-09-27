@@ -29,7 +29,7 @@ why-no-stars v${VERSION} — 诊断你的 GitHub 仓库为什么没人 star
   --md <file>      输出 Markdown 报告，可直接贴到 issue/discussion（- 表示 stdout）
   --zh             用中文输出（默认自动检测）
   --en             用英文输出
-  --lang <lang>    覆盖自动识别的主语言（用于生态分位对比）
+  --lang <lang>    覆盖识别的主语言（用于生态对比，也用于报告显示）
   --token <token>  GitHub token（默认读 GITHUB_TOKEN / GH_TOKEN 环境变量）
   --no-benchmark   跳过生态分位对比（省 7 次 API 调用）
   --no-cache       跳过本地缓存与运行历史（仓库数据默认缓存 30 分钟）
@@ -61,7 +61,7 @@ Options:
   --md <file>      write a Markdown report to paste into issues (- = stdout)
   --zh             output in Chinese
   --en             output in English
-  --lang <lang>    override the detected primary language (for benchmarking)
+  --lang <lang>    override the detected primary language (benchmarking + report display)
   --token <token>  GitHub token (defaults to GITHUB_TOKEN / GH_TOKEN env)
   --no-benchmark   skip the ecosystem percentile (saves 7 API calls)
   --no-cache       skip the on-disk cache and run history (repo data cached 30 min)
@@ -110,13 +110,19 @@ export function parseArgs(argv) {
   const nextValue = (flag) => {
     const v = argv[++i];
     if (v === undefined || v.trim() === '' || v.startsWith('--')) {
-      throw new UsageError(envLocale() === 'zh'
+      throw new UsageError(msgLocale() === 'zh'
         ? `选项 ${flag} 需要一个非空值。`
         : `Option ${flag} requires a non-empty value.`);
     }
     return v;
   };
   let i = 0;
+  // Boolean flags take no value: "--quiet=false" would silently mean --quiet.
+  const BOOL_FLAGS = new Set([
+    '--no-benchmark', '--no-cache', '--quiet', '-q', '--color', '--no-color',
+    '--zh', '--en', '--help', '-h', '--version', '-v',
+  ]);
+  const msgLocale = () => (argv.includes('--zh') ? 'zh' : envLocale());
   while (i < argv.length) {
     const a = argv[i];
     // --flag=value inline syntax
@@ -124,8 +130,13 @@ export function parseArgs(argv) {
     const flag = a.startsWith('--') && eq > 2 ? a.slice(0, eq) : a;
     const inline = a.startsWith('--') && eq > 2 ? a.slice(eq + 1) : undefined;
     // `--md=` / `--md ""` would silently disable the output — reject loudly.
+    if (inline !== undefined && BOOL_FLAGS.has(flag)) {
+      throw new UsageError(msgLocale() === 'zh'
+        ? `选项 ${flag} 不接受值（布尔开关）。`
+        : `Option ${flag} takes no value (boolean flag).`);
+    }
     if (inline !== undefined && inline.trim() === '') {
-      throw new UsageError(envLocale() === 'zh'
+      throw new UsageError(msgLocale() === 'zh'
         ? `选项 ${flag} 需要一个非空值。`
         : `Option ${flag} requires a non-empty value.`);
     }
@@ -142,7 +153,7 @@ export function parseArgs(argv) {
       case '--fail-under': {
         const v = inline ?? nextValue('--fail-under');
         if (!/^\d+$/.test(v) || Number(v) > 100) {
-          throw new UsageError(envLocale() === 'zh'
+          throw new UsageError(msgLocale() === 'zh'
             ? `--fail-under 需要 0–100 的整数，收到 ${JSON.stringify(v)}。`
             : `--fail-under expects an integer 0–100, got ${JSON.stringify(v)}.`);
         }
@@ -156,14 +167,14 @@ export function parseArgs(argv) {
       case '--version': case '-v': opts.version = true; break;
       default:
         if (a.startsWith('--')) {
-          throw new UsageError(envLocale() === 'zh' ? `未知选项：${a}` : `Unknown option: ${a}`);
+          throw new UsageError(msgLocale() === 'zh' ? `未知选项：${a}` : `Unknown option: ${a}`);
         }
         positional.push(a);
     }
     i++;
   }
   if (positional.length > 1) {
-    throw new UsageError(envLocale() === 'zh' ? '只需要一个仓库参数。' : 'Expected exactly one repo argument.');
+    throw new UsageError(msgLocale() === 'zh' ? '只需要一个仓库参数。' : 'Expected exactly one repo argument.');
   }
   opts.slug = positional[0] ?? null;
   return opts;
@@ -197,7 +208,7 @@ export async function main(argv) {
   try {
     opts = parseArgs(argv);
   } catch (err) {
-    const zh0 = envLocale() === 'zh';
+    const zh0 = (argv.includes('--zh') ? 'zh' : envLocale()) === 'zh';
     console.error(`error: ${err.message}`);
     console.error(zh0 ? '运行 --help 查看用法。' : 'Run with --help for usage.');
     return 1;
@@ -357,6 +368,8 @@ export async function main(argv) {
   }
 
   if (opts.quiet) {
+    // When an artifact targets stdout, the summary must not contaminate it.
+    const toStdout = opts.svg === '-' || opts.md === '-' || opts.json === '-';
     const peers = benchmark
       ? (zh
         ? ` · ${fmtTopZh(benchmark)}（${facts.language ?? 'GitHub'} 同类）`
@@ -369,9 +382,15 @@ export async function main(argv) {
         ? (d === 0 ? '（与上次运行持平）' : `（较上次运行 ${d > 0 ? '▲+' : '▼'}${d}）`)
         : ` (${d === 0 ? 'Δ0' : d > 0 ? `▲+${d}` : `▼${d}`} vs last run)`;
     }
-    console.log(`${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}${deltaNote}`);
+    const summary = `${facts.fullName}: ${scorecard.overall}/100 [${scorecard.grade}]${peers}${deltaNote}`;
+    if (toStdout) console.error(dim(summary));
+    else console.log(summary);
   } else {
-    console.log(renderTerminal({ facts, scorecard, benchmark, locale, delta, stale }));
+    // An artifact on stdout ("-") owns the stream; the human report moves to
+    // stderr so `--json - | jq` stays parseable.
+    const toStdout = opts.svg === '-' || opts.md === '-' || opts.json === '-';
+    if (toStdout) console.error(renderTerminal({ facts, scorecard, benchmark, locale, delta, stale }));
+    else console.log(renderTerminal({ facts, scorecard, benchmark, locale, delta, stale }));
     console.error(
       dim(zh
         ? `\n改完最值得做的几项，再跑一次——方法就这么多。`

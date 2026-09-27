@@ -89,8 +89,8 @@ export function renderSvg({ facts, scorecard, benchmark, locale, stale = false }
     }
   } else {
     benchLine = zh
-      ? `${scorecard.stats.passed}/${scorecard.stats.total} 项检查通过`
-      : `${scorecard.stats.passed}/${scorecard.stats.total} checks passed`;
+      ? `${scorecard.stats.passed}/${scorecard.stats.total} 项有效检查通过`
+      : `${scorecard.stats.passed}/${scorecard.stats.total} evaluated checks passed`;
   }
 
   const gradeLabel = zh ? `评级 ${scorecard.grade}` : `Grade ${scorecard.grade}`;
@@ -100,7 +100,7 @@ export function renderSvg({ facts, scorecard, benchmark, locale, stale = false }
   const metaFit = fitText(metaRaw, 1020, 22, 14);
   const benchFit = fitText(benchLine, 1020, 20, 14);
 
-  const footerRaw = `why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx why-no-stars <owner/repo>`;
+  const footerRaw = `why-no-stars · ${zh ? 'star 不是玄学，是前 10 秒的功夫。' : 'stars aren’t luck. they’re the first 10 seconds, done right.'}   npx github:paopaonb666/why-no-stars <owner/repo>`;
   const footerFit = fitText(footerRaw, 1020, 19, 12);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">

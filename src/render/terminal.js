@@ -27,7 +27,7 @@ function scoreColor(score) {
 }
 
 function bar(score, width = 10) {
-  const filled = Math.round((score / 100) * width);
+  const filled = Math.floor((score / 100) * width);
   return '█'.repeat(filled) + '░'.repeat(width - filled);
 }
 
@@ -140,7 +140,7 @@ export function renderTerminal({ facts, scorecard, benchmark, locale, delta = nu
   push();
   push(
     gray('─'.repeat(ruleW)) +
-      gray(`  why-no-stars · ${T({ en: 'stars aren’t luck.', zh: 'star 不是玄学，是前 10 秒的功夫。' }, locale)} npx why-no-stars <owner/repo>`)
+      gray(`  why-no-stars · ${T({ en: 'stars aren’t luck.', zh: 'star 不是玄学，是前 10 秒的功夫。' }, locale)} npx github:paopaonb666/why-no-stars <owner/repo>`)
   );
   return out.join('\n');
 }
