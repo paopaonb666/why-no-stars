@@ -109,8 +109,8 @@ export function parseArgs(argv) {
   const positional = [];
   const nextValue = (flag) => {
     const v = argv[++i];
-    if (v === undefined || v.startsWith('--')) {
-      throw new UsageError(`Option ${flag} requires a value.`);
+    if (v === undefined || v.trim() === '' || v.startsWith('--')) {
+      throw new UsageError(`Option ${flag} requires a non-empty value.`);
     }
     return v;
   };
@@ -121,6 +121,10 @@ export function parseArgs(argv) {
     const eq = a.indexOf('=');
     const flag = a.startsWith('--') && eq > 2 ? a.slice(0, eq) : a;
     const inline = a.startsWith('--') && eq > 2 ? a.slice(eq + 1) : undefined;
+    // `--md=` / `--md ""` would silently disable the output — reject loudly.
+    if (inline !== undefined && inline.trim() === '') {
+      throw new UsageError(`Option ${flag} requires a non-empty value.`);
+    }
     switch (flag) {
       case '--svg': opts.svg = inline ?? nextValue('--svg'); break;
       case '--json': opts.json = inline ?? nextValue('--json'); break;
@@ -133,11 +137,10 @@ export function parseArgs(argv) {
       case '--no-cache': opts.noCache = true; break;
       case '--fail-under': {
         const v = inline ?? nextValue('--fail-under');
-        const n = Number(v);
-        if (!Number.isInteger(n) || n < 0 || n > 100) {
+        if (!/^\d+$/.test(v) || Number(v) > 100) {
           throw new UsageError(`--fail-under expects an integer 0–100, got ${JSON.stringify(v)}.`);
         }
-        opts.failUnder = n;
+        opts.failUnder = Number(v);
         break;
       }
       case '--quiet': case '-q': opts.quiet = true; break;
@@ -165,10 +168,13 @@ export function parseSlug(raw) {
   return { owner: m[1], name: m[2] };
 }
 
-function detectLocale(opts) {
-  if (opts.locale) return opts.locale;
+function envLocale() {
   const lang = process.env.LANG ?? process.env.LC_ALL ?? '';
   return /zh/i.test(lang) ? 'zh' : 'en';
+}
+
+function detectLocale(opts) {
+  return opts.locale ?? envLocale();
 }
 
 function writeFileSafe(file, content) {
@@ -181,8 +187,9 @@ export async function main(argv) {
   try {
     opts = parseArgs(argv);
   } catch (err) {
+    const zh0 = envLocale() === 'zh';
     console.error(`error: ${err.message}`);
-    console.error("Run with --help for usage.");
+    console.error(zh0 ? '运行 --help 查看用法。' : 'Run with --help for usage.');
     return 1;
   }
 
@@ -195,13 +202,17 @@ export async function main(argv) {
 
   if (!opts.slug) {
     console.error(zh ? 'error: 缺少 <owner/repo> 参数。' : 'error: missing <owner/repo>.');
-    console.error("Run with --help for usage.");
+    console.error(zh ? '运行 --help 查看用法。' : 'Run with --help for usage.');
     return 1;
   }
 
   const slug = parseSlug(opts.slug);
   if (!slug) {
-    console.error(`Invalid repo: ${opts.slug} — expected owner/repo or a GitHub URL.`);
+    console.error(
+      zh
+        ? `无效仓库：${opts.slug}——需要 owner/repo 或 GitHub 链接。`
+        : `Invalid repo: ${opts.slug} — expected owner/repo or a GitHub URL.`
+    );
     return 1;
   }
 
@@ -269,7 +280,8 @@ export async function main(argv) {
     try {
       say(zh ? `→ 正在采集仓库数据：${slug.owner}/${slug.name} …` : `→ collecting repo data: ${slug.owner}/${slug.name} …`);
       const payloads = await fetchPayloads(client, slug.owner, slug.name, { langOverride: opts.lang });
-      if (cacheDir) writeData(cacheDir, repoCacheFile, payloads);
+      // Cache payloads lang-free: --lang is a per-run lens, not repo truth.
+      if (cacheDir) writeData(cacheDir, repoCacheFile, { ...payloads, langOverride: null });
       entry = { at: Date.now(), data: payloads };
       if (client.conditionalHits > 0) {
         say(zh
@@ -291,7 +303,8 @@ export async function main(argv) {
       }
     }
   }
-  const facts = buildFacts(entry.data, { now: new Date() });
+  // langOverride comes from THIS run's flag, never from cached payloads.
+  const facts = buildFacts({ ...entry.data, langOverride: opts.lang ?? null }, { now: new Date() });
 
   say(zh ? '→ 正在体检并评分 …' : '→ running checks and scoring …');
   const checks = runChecks(facts);

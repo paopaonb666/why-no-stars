@@ -2,9 +2,11 @@
 import { T, fmtNum, fmtTopEn, fmtTopZh } from './terminal.js';
 import { sanitize } from '../ansi.js';
 
-// Pipe a cell's content so it can't break out of the table structure; also
-// strip control/escape sequences from repo-controlled text.
-const cell = (s) => sanitize(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+// Pipe a cell's content so it can't break out of the table structure. Escape
+// backslashes FIRST, or a literal "\|" survives as an escaped pipe and still
+// splits the row. Also strip control/escape sequences from repo-controlled text.
+const cell = (s) =>
+  sanitize(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 
 export function renderMarkdown({ facts, scorecard, benchmark, locale }) {
   const f = facts;

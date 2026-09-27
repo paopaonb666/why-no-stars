@@ -126,6 +126,9 @@ export function buildFacts(p, { now = new Date() } = {}) {
   const rootFiles = Array.isArray(p.contents)
     ? p.contents.map((f) => ({ name: f.name, type: f.type }))
     : [];
+  const contentsKnown = Array.isArray(p.contents);
+  const workflowsKnown = p.workflows != null;
+  const workflows = p.workflows ?? { total_count: 0, workflows: [] };
 
   // p.stargazers is the computed last page of the stargazers list:
   //   null            -> the request failed (e.g. GitHub caps deep pagination)
@@ -175,9 +178,11 @@ export function buildFacts(p, { now = new Date() } = {}) {
     languages: p.languages ?? {},
 
     rootFiles,
+    contentsKnown,
     hasManifest: rootFiles.some((f) => manifestNames.includes(f.name)),
     packageJson,
-    workflows: p.workflows ?? { total_count: 0, workflows: [] },
+    workflows,
+    workflowsKnown,
     // These three may be null when the API refused (e.g. contributor lists of
     // very large repos 403). Null means "unknown", never "zero".
     tags: Array.isArray(p.tags) ? p.tags.map((t) => t.name).filter(Boolean) : null,
@@ -187,6 +192,10 @@ export function buildFacts(p, { now = new Date() } = {}) {
     contributors: Array.isArray(p.contributors) ? p.contributors.length : null,
     issueTemplateKnown: probeFound(p.issueTemplateProbe),
     securityPolicyKnown: probeFound(p.securityProbe),
+    // Raw three-state probes ('known-present'/'known-absent'/'unknown' or a
+    // legacy fixture shape): 'unknown' means claim nothing.
+    issueTemplateProbeState: typeof p.issueTemplateProbe === 'string' ? p.issueTemplateProbe : null,
+    securityProbeState: typeof p.securityProbe === 'string' ? p.securityProbe : null,
     stargazerTimestamps,
     starSample,
     recentStarEvents28,
@@ -256,7 +265,10 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     repo,
     languages: ok(languages) ?? {},
     community: communityPayload,
-    contents: ok(contents) ?? [],
+    // Null means the fetch was refused — checks must skip, never claim
+    // "empty repo" (a 403 on /contents would otherwise fabricate
+    // "no manifest / no examples / no tests").
+    contents: ok(contents),
     tags: ok(tags),
     releases: ok(releases),
     contributors: ok(contributors),
@@ -264,7 +276,7 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     events: ok(events),
     packageJson: ok(packageJson),
     readme: ok(readme),
-    workflows: ok(workflows) ?? { total_count: 0, workflows: [] },
+    workflows: ok(workflows),
     issueTemplateProbe: probeState(communityPayload?.files?.issue_template, templateProbeResult),
     securityProbe: probeState(communityPayload?.files?.security_policy, securityProbeResult),
     langOverride: langOverride ?? null,

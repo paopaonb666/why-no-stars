@@ -49,10 +49,13 @@ export function discoverabilityChecks(f) {
   const firstHeading = readme?.headings?.find((h) => h.level <= 2);
   out.push(
     check('title-match', 'discoverability', { en: 'README title matches repo name', zh: 'README 标题与仓库名一致' }, {
-      status: firstHeading ? (normalizeName(firstHeading.text).includes(nameNorm) ? 'pass' : 'warn') : 'warn',
-      detail: firstHeading
-        ? { en: `H${firstHeading.level}: “${firstHeading.text}”`, zh: `H${firstHeading.level}：「${firstHeading.text}」` }
-        : { en: 'No top-level heading in README.', zh: 'README 顶层没有标题。' },
+      // No README at all is covered by readme-exists — don't double-punish.
+      status: readme === null ? 'skip' : firstHeading ? (normalizeName(firstHeading.text).includes(nameNorm) ? 'pass' : 'warn') : 'warn',
+      detail: readme === null
+        ? { en: 'No README — covered by the README check.', zh: '没有 README——已由「README 存在」检查覆盖。' }
+        : firstHeading
+          ? { en: `H${firstHeading.level}: “${firstHeading.text}”`, zh: `H${firstHeading.level}：「${firstHeading.text}」` }
+          : { en: 'No top-level heading in README.', zh: 'README 顶层没有标题。' },
       fix: {
         en: 'Start the README with “# <repo-name> — one-line pitch”. Exact-name headings win browser tabs, search, and screenshots.',
         zh: 'README 第一行用「# <仓库名> — 一句话简介」。同名标题在浏览器标签页、搜索和截图里都占便宜。',

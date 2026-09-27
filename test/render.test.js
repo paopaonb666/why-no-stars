@@ -95,18 +95,37 @@ test('terminal renderer English output', () => {
 });
 
 test('repo-controlled escape sequences never reach the rendered reports', () => {
-  const s = setup();
-  s.facts.description = 'A demo \x1b[31m<repo>\x1b[0m & more\u0007';
+  const p = payloads();
+  p.repo.description = 'A demo \x1b[31m<repo>\x1b[0m & more\u0007';
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  const scorecard = scoreChecks(runChecks(facts));
   for (const rendered of [
-    renderTerminal(s),
-    renderMarkdown(s),
-    renderSvg(s),
+    renderTerminal({ facts, scorecard, benchmark: null, locale: 'en' }),
+    renderMarkdown({ facts, scorecard, benchmark: null, locale: 'en' }),
+    renderSvg({ facts, scorecard, benchmark: null, locale: 'en' }),
   ]) {
     assert.ok(!rendered.includes('\x1b'), 'raw ESC reached the output');
     assert.ok(!rendered.includes('\u0007'), 'control char reached the output');
   }
   // the visible text survives (markdown shows evidence rows for every check)
-  assert.ok(renderMarkdown(s).includes('A demo <repo> & more'));
+  assert.ok(
+    renderMarkdown({ facts, scorecard, benchmark: null, locale: 'en' }).includes('A demo <repo> & more')
+  );
+});
+
+test('markdown: a literal backslash-pipe in repo text cannot split the table row', () => {
+  const p = payloads();
+  p.repo.description = 'a \\| b'; // actual chars: a, space, backslash, pipe, space, b
+  const facts = buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') });
+  const scorecard = scoreChecks(runChecks(facts));
+  const md = renderMarkdown({ facts, scorecard, benchmark: null, locale: 'en' });
+  // backslash escaped first, then the pipe -> "\\\|": CommonMark un-escapes
+  // to a literal "\|" instead of a cell boundary
+  assert.ok(md.includes('a \\\\\\| b'), 'expected backslash-escaped pipe in the cell');
+  // the evidence row still has exactly 4 unescaped pipes (4-column table)
+  const row = md.split('\n').find((l) => l.startsWith('|') && l.includes('Repo description'));
+  const unescapedPipes = (row.match(/(^|[^\\])\|/g) ?? []).length;
+  assert.equal(unescapedPipes, 4);
 });
 
 test('fitText: shrinks, then truncates with an ellipsis; short text untouched', () => {

@@ -330,3 +330,65 @@ test('releases check: recent pushes but a stale latest release warns', () => {
   assert.equal(c.status, 'warn');
   assert.match(c.detail.en, /days old while code was pushed/);
 });
+
+// --- honesty fixes from the red-team audit: refused data is never evidence ---
+
+test('license: repo-payload spdx survives a refused community profile', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ license: { spdx_id: 'MIT' } });
+  p.community = null; // profile fetch refused
+  const facts = buildFacts(p, { now: new Date() });
+  const c = runChecks(facts).find((x) => x.id === 'license');
+  assert.equal(c.status, 'pass'); // spdx comes from the repo payload, not the profile
+  assert.match(c.detail.en, /repo metadata/);
+  // no license info anywhere -> skip, never "no license"
+  const p2 = badPayloads();
+  p2.repo = baseRepo({ license: null });
+  const c2 = runChecks(buildFacts(p2, { now: new Date() })).find((x) => x.id === 'license');
+  assert.equal(c2.status, 'skip');
+});
+
+test('community details render file names, never [object Object]', () => {
+  const p = badPayloads();
+  p.community = { files: { issue_template: { key: 'issue_template', name: 'bug_report.md', html_url: 'https://x' } } };
+  const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'issue-template');
+  assert.equal(c.status, 'pass');
+  assert.equal(c.detail.en, 'Found: bug_report.md');
+  assert.ok(!c.detail.en.includes('[object Object]'));
+});
+
+test('an inconclusive contents probe skips instead of claiming absence', () => {
+  const p = badPayloads();
+  p.community = { files: {} }; // profile loads but claims nothing
+  p.issueTemplateProbe = 'unknown'; // probe errored (not 404)
+  p.securityProbe = 'unknown';
+  const checks = runChecks(buildFacts(p, { now: new Date() }));
+  assert.equal(checks.find((x) => x.id === 'issue-template').status, 'skip');
+  assert.equal(checks.find((x) => x.id === 'security-policy').status, 'skip');
+});
+
+test('unknown push time skips recent-activity instead of "abandoned"', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ pushed_at: null });
+  const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'recent-activity');
+  assert.equal(c.status, 'skip');
+  assert.match(c.detail.en, /Unknown last-push/);
+});
+
+test('title-match skips for README-less repos (no double punishment)', () => {
+  const checks = runChecks(buildFacts(badPayloads(), { now: new Date() }));
+  assert.equal(checks.find((x) => x.id === 'title-match').status, 'skip');
+});
+
+test('refused /contents and /workflows fetches degrade to skips, not "empty"', () => {
+  const p = badPayloads();
+  p.contents = null; // /contents fetch refused
+  p.workflows = null; // /workflows fetch refused
+  const checks = runChecks(buildFacts(p, { now: new Date() }));
+  for (const id of ['examples-dir', 'manifest']) {
+    assert.equal(checks.find((x) => x.id === id).status, 'skip', id);
+  }
+  assert.equal(checks.find((x) => x.id === 'ci').status, 'skip');
+  // tests: no signals visible AND root list unknown -> skip (not warn)
+  assert.equal(checks.find((x) => x.id === 'tests').status, 'skip');
+});

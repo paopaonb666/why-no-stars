@@ -51,6 +51,9 @@ test('parseArgs: --fail-under accepts integers 0-100 only', () => {
   assert.throws(() => parseArgs(['a/b', '--fail-under', '-1']), UsageError);
   assert.throws(() => parseArgs(['a/b', '--fail-under', '3.5']), UsageError);
   assert.throws(() => parseArgs(['a/b', '--fail-under']), UsageError);
+  assert.throws(() => parseArgs(['a/b', '--fail-under=']), UsageError); // empty disables silently no more
+  assert.throws(() => parseArgs(['a/b', '--md=']), UsageError); // empty output path rejected
+  assert.throws(() => parseArgs(['a/b', '--svg', '']), UsageError);
 });
 
 test('finalExitCode: write failure beats the CI gate; gate fires only when set', () => {

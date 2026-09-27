@@ -41,12 +41,15 @@ export function quickstartChecks(f) {
   const exampleDir = f.rootFiles.find((x) =>
     /^(examples?|demos?|playground|docs?|documentation)$/i.test(x.name) && x.type === 'dir'
   );
+  const contentsUnknown = f.contentsKnown === false;
   out.push(
     check('examples-dir', 'quickstart', { en: 'Examples / docs directory', zh: '示例 / 文档目录' }, {
-      status: exampleDir ? 'pass' : 'warn',
-      detail: exampleDir
-        ? { en: `Found ./${exampleDir.name}/`, zh: `找到 ./${exampleDir.name}/ 目录` }
-        : { en: 'No examples/, demo/ or docs/ directory at the repo root.', zh: '仓库根目录没有 examples/、demo/ 或 docs/ 目录。' },
+      status: contentsUnknown ? 'skip' : exampleDir ? 'pass' : 'warn',
+      detail: contentsUnknown
+        ? { en: 'Root file list unavailable (API refused) — not counted against you.', zh: '根目录文件列表不可用（API 拒绝）——不计入评分。' }
+        : exampleDir
+          ? { en: `Found ./${exampleDir.name}/`, zh: `找到 ./${exampleDir.name}/ 目录` }
+          : { en: 'No examples/, demo/ or docs/ directory at the repo root.', zh: '仓库根目录没有 examples/、demo/ 或 docs/ 目录。' },
       fix: {
         en: 'Add an examples/ folder with 1–3 minimal runnable cases. Browsers of code trust examples.',
         zh: '加一个 examples/ 目录，放 1–3 个最小可运行示例。看代码的人最信示例。',
@@ -57,10 +60,12 @@ export function quickstartChecks(f) {
 
   out.push(
     check('manifest', 'quickstart', { en: 'Package manifest at root', zh: '根目录有包管理清单' }, {
-      status: f.hasManifest ? 'pass' : 'warn',
-      detail: f.hasManifest
-        ? { en: 'Found a package manifest (package.json, pyproject.toml, Cargo.toml, …).', zh: '找到包管理清单（package.json、pyproject.toml、Cargo.toml 等）。' }
-        : { en: 'No recognized package manifest at the repo root.', zh: '仓库根目录没有可识别的包管理清单。' },
+      status: contentsUnknown ? 'skip' : f.hasManifest ? 'pass' : 'warn',
+      detail: contentsUnknown
+        ? { en: 'Root file list unavailable (API refused) — not counted against you.', zh: '根目录文件列表不可用（API 拒绝）——不计入评分。' }
+        : f.hasManifest
+          ? { en: 'Found a package manifest (package.json, pyproject.toml, Cargo.toml, …).', zh: '找到包管理清单（package.json、pyproject.toml、Cargo.toml 等）。' }
+          : { en: 'No recognized package manifest at the repo root.', zh: '仓库根目录没有可识别的包管理清单。' },
       fix: {
         en: 'Keep the ecosystem manifest (package.json / pyproject.toml / Cargo.toml / go.mod) at the repo root so tools and humans recognize the stack instantly.',
         zh: '把生态清单（package.json / pyproject.toml / Cargo.toml / go.mod）放在仓库根目录，让人和工具一眼认出技术栈。',

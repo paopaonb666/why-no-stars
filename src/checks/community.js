@@ -7,19 +7,27 @@ export function communityChecks(f) {
   // these files, and claiming "missing" would fabricate evidence.
   const noData = (f.community ?? null) === null;
   const files = f.community?.files ?? {};
+  // The profile returns file objects ({key, name, html_url}); fixtures and
+  // older payloads may carry plain strings. Normalize once for the details.
+  const nm = (v) => (typeof v === 'string' ? v : v?.name ?? v?.html_url) ?? null;
   const UNAVAILABLE = {
     en: 'Community profile unavailable (API refused) — not counted against you.',
     zh: '社区资料接口不可用（API 拒绝）——不计入评分。',
   };
+  const UNVERIFIED = {
+    en: 'Contents probe failed — cannot confirm presence or absence; not counted against you.',
+    zh: '内容探测失败——无法确认有无，不计入评分。',
+  };
 
-  const templateUnknown = noData && !f.issueTemplateKnown;
+  const templateUnknown = (noData && !f.issueTemplateKnown) || f.issueTemplateProbeState === 'unknown';
+  const tplFile = nm(files.issue_template);
   out.push(
     check('issue-template', 'community', { en: 'Issue template', zh: 'Issue 模板' }, {
-      status: templateUnknown ? 'skip' : files.issue_template || f.issueTemplateKnown ? 'pass' : 'warn',
+      status: templateUnknown ? 'skip' : tplFile || f.issueTemplateKnown ? 'pass' : 'warn',
       detail: templateUnknown
-        ? UNAVAILABLE
-        : files.issue_template
-          ? { en: `Found: ${files.issue_template}`, zh: `找到：${files.issue_template}` }
+        ? (noData ? UNAVAILABLE : UNVERIFIED)
+        : tplFile
+          ? { en: `Found: ${tplFile}`, zh: `找到：${tplFile}` }
           : f.issueTemplateKnown
             ? { en: 'Found in .github/ISSUE_TEMPLATE (not surfaced by the community profile).', zh: '在 .github/ISSUE_TEMPLATE 中找到（community profile 未收录）。' }
             : { en: 'No issue template.', zh: '没有 issue 模板。' },
@@ -31,26 +39,28 @@ export function communityChecks(f) {
     })
   );
 
+  const prFile = nm(files.pull_request_template);
   out.push(
     check('pr-template', 'community', { en: 'PR template', zh: 'PR 模板' }, {
-      status: noData ? 'skip' : files.pull_request_template ? 'pass' : 'warn',
+      status: noData ? 'skip' : prFile ? 'pass' : 'warn',
       detail: noData
         ? UNAVAILABLE
-        : files.pull_request_template
-          ? { en: `Found: ${files.pull_request_template}`, zh: `找到：${files.pull_request_template}` }
+        : prFile
+          ? { en: `Found: ${prFile}`, zh: `找到：${prFile}` }
           : { en: 'No PR template.', zh: '没有 PR 模板。' },
       fix: { en: 'Add a short PULL_REQUEST_TEMPLATE.md (what/why/how tested).', zh: '加一个简短的 PULL_REQUEST_TEMPLATE.md（改了什么/为什么/怎么测）。' },
       impact: 'low',
     })
   );
 
+  const contributingFile = nm(files.contributing);
   out.push(
     check('contributing', 'community', { en: 'CONTRIBUTING guide', zh: 'CONTRIBUTING 指南' }, {
-      status: noData ? 'skip' : files.contributing ? 'pass' : 'warn',
+      status: noData ? 'skip' : contributingFile ? 'pass' : 'warn',
       detail: noData
         ? UNAVAILABLE
-        : files.contributing
-          ? { en: `Found: ${files.contributing}`, zh: `找到：${files.contributing}` }
+        : contributingFile
+          ? { en: `Found: ${contributingFile}`, zh: `找到：${contributingFile}` }
           : { en: 'No CONTRIBUTING.md.', zh: '没有 CONTRIBUTING.md。' },
       fix: {
         en: 'Add CONTRIBUTING.md: how to set up dev env, run tests, and open a PR. Lower the barrier and outsiders appear.',
@@ -74,27 +84,29 @@ export function communityChecks(f) {
     })
   );
 
+  const cocFile = nm(files.code_of_conduct);
   out.push(
     check('coc', 'community', { en: 'Code of conduct', zh: '行为准则' }, {
-      status: noData ? 'skip' : files.code_of_conduct ? 'pass' : 'warn',
+      status: noData ? 'skip' : cocFile ? 'pass' : 'warn',
       detail: noData
         ? UNAVAILABLE
-        : files.code_of_conduct
-          ? { en: `Found: ${files.code_of_conduct}`, zh: `找到：${files.code_of_conduct}` }
+        : cocFile
+          ? { en: `Found: ${cocFile}`, zh: `找到：${cocFile}` }
           : { en: 'No code of conduct.', zh: '没有行为准则文件。' },
       fix: { en: 'Add a CODE_OF_CONDUCT.md (GitHub provides a template in one click).', zh: '加一个 CODE_OF_CONDUCT.md（GitHub 后台一键模板）。' },
       impact: 'low',
     })
   );
 
-  const securityUnknown = noData && !f.securityPolicyKnown;
+  const securityUnknown = (noData && !f.securityPolicyKnown) || f.securityProbeState === 'unknown';
+  const secFile = nm(files.security_policy);
   out.push(
     check('security-policy', 'community', { en: 'Security policy', zh: '安全披露政策' }, {
-      status: securityUnknown ? 'skip' : files.security_policy || f.securityPolicyKnown ? 'pass' : 'warn',
+      status: securityUnknown ? 'skip' : secFile || f.securityPolicyKnown ? 'pass' : 'warn',
       detail: securityUnknown
-        ? UNAVAILABLE
-        : files.security_policy
-          ? { en: `Found: ${files.security_policy}`, zh: `找到：${files.security_policy}` }
+        ? (noData ? UNAVAILABLE : UNVERIFIED)
+        : secFile
+          ? { en: `Found: ${secFile}`, zh: `找到：${secFile}` }
           : f.securityPolicyKnown
             ? { en: 'Found SECURITY.md (not surfaced by the community profile).', zh: '找到 SECURITY.md（community profile 未收录）。' }
             : { en: 'No SECURITY.md — the Security tab shows “no policy”.', zh: '没有 SECURITY.md——Security 页会显示「未提供安全策略」。' },

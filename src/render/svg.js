@@ -90,7 +90,8 @@ export function renderSvg({ facts, scorecard, benchmark, locale }) {
   }
 
   const gradeLabel = zh ? `评级 ${scorecard.grade}` : `Grade ${scorecard.grade}`;
-  const metaRaw = `★ ${fmtNum(f.stars)}   ·   ${f.language ?? '?'}   ·   ${gradeLabel}${f.isArchived ? '   ·   ARCHIVED' : ''}${f.isFork ? '   ·   FORK' : ''}`;
+  const archivedTag = f.isArchived ? `   ·   ${zh ? '已归档' : 'ARCHIVED'}` : '';
+  const metaRaw = `★ ${fmtNum(f.stars)}   ·   ${f.language ?? '?'}   ·   ${gradeLabel}${archivedTag}${f.isFork ? '   ·   FORK' : ''}`;
   const nameFit = fitText(f.fullName, 1020, 40, 24);
   const metaFit = fitText(metaRaw, 1020, 22, 14);
   const benchFit = fitText(benchLine, 1020, 20, 14);

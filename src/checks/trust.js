@@ -15,7 +15,11 @@ export function trustChecks(f) {
 
   const licenseFile = f.community?.files?.license ?? null;
   const spdx = f.repo?.license?.spdx_id ?? f.repo?.license?.name ?? null;
-  const spdxValid = spdx && spdx !== 'NOASSERTION' && spdx !== 'Other';
+  const spdxValid = Boolean(spdx && spdx !== 'NOASSERTION' && spdx !== 'Other');
+  // The repo payload itself carries license info — when the community-profile
+  // fetch was refused, spdx is still usable evidence; only the "license FILE
+  // present" part becomes unverified.
+  const noCommunity = (f.community ?? null) === null;
   // A package.json contradicting the repo license misleads everyone arriving
   // from npm. Dual-license expressions ("MIT OR Apache-2.0") are left alone.
   const pkgLicense = typeof f.packageJson?.license === 'string'
@@ -29,31 +33,51 @@ export function trustChecks(f) {
   );
   out.push(
     check('license', 'trust', { en: 'License', zh: '开源协议' }, {
-      status: !licenseFile ? 'fail' : licenseMismatch ? 'warn' : spdxValid ? 'pass' : 'warn',
-      detail: !licenseFile
-        ? { en: 'No detectable license.', zh: '没有可识别的开源协议。' }
-        : licenseMismatch
-          ? {
-              en: `${spdx} (license file), but package.json says “${pkgLicense}”.`,
-              zh: `仓库协议是 ${spdx}（有协议文件），但 package.json 写的是「${pkgLicense}」。`,
-            }
-          : spdxValid
-            ? { en: `${spdx} (license file present).`, zh: `${spdx}（已检测到协议文件）。` }
-            : { en: 'License file present but not auto-identified (custom or variant license).', zh: '检测到协议文件，但无法自动识别具体协议（自定义或变体协议）。' },
-      fix: !licenseFile
+      status: noCommunity && !spdxValid
+        ? 'skip'
+        : noCommunity
+          ? 'pass'
+          : !licenseFile
+            ? 'fail'
+            : licenseMismatch ? 'warn' : spdxValid ? 'pass' : 'warn',
+      detail: noCommunity && !spdxValid
+        ? { en: 'License data unavailable (API refused) — not counted against you.', zh: '协议数据不可用（API 拒绝）——不计入评分。' }
+        : noCommunity
+          ? { en: `${spdx} (from repo metadata; license file not verifiable — API refused).`, zh: `${spdx}（来自仓库元数据；协议文件因 API 拒绝无法核验）。` }
+          : !licenseFile
+            ? { en: 'No detectable license.', zh: '没有可识别的开源协议。' }
+            : licenseMismatch
+              ? {
+                  en: `${spdx} (license file), but package.json says “${pkgLicense}”.`,
+                  zh: `仓库协议是 ${spdx}（有协议文件），但 package.json 写的是「${pkgLicense}」。`,
+                }
+              : spdxValid
+                ? { en: `${spdx} (license file present).`, zh: `${spdx}（已检测到协议文件）。` }
+                : { en: 'License file present but not auto-identified (custom or variant license).', zh: '检测到协议文件，但无法自动识别具体协议（自定义或变体协议）。' },
+      fix: noCommunity && !spdxValid
         ? {
-            en: 'Add a LICENSE (MIT/Apache-2.0). No license = legally unusable = nobody stars or adopts it.',
-            zh: '加 LICENSE 文件（MIT/Apache-2.0）。没有协议 = 法律上不可用 = 没人会采用或收藏。',
+            en: 'License could not be verified this run (API refused). Re-run later; a LICENSE file plus an SPDX identifier is the goal.',
+            zh: '本轮无法核验协议（API 拒绝）。稍后再试；目标是仓库根有 LICENSE 文件且声明了标准协议。',
           }
-        : licenseMismatch
+        : noCommunity
           ? {
-              en: `Align package.json's “license” field with the repo license (${spdx}) so npm metadata stops contradicting the repo.`,
-              zh: `把 package.json 的 license 字段改成与仓库一致（${spdx}），别让 npm 元数据和仓库互相矛盾。`,
+              en: 'Re-run later to verify the license file itself (API refused this time).',
+              zh: '稍后再跑一次以核验协议文件本身（本次 API 拒绝）。',
             }
-          : {
-              en: 'Name the license in the README (e.g. “Licensed under GPL-2.0”) so adopters don’t have to guess.',
-              zh: '在 README 里写明协议（如「基于 GPL-2.0 授权」），让采用者不必猜。',
-            },
+          : !licenseFile
+            ? {
+                en: 'Add a LICENSE (MIT/Apache-2.0). No license = legally unusable = nobody stars or adopts it.',
+                zh: '加 LICENSE 文件（MIT/Apache-2.0）。没有协议 = 法律上不可用 = 没人会采用或收藏。',
+              }
+            : licenseMismatch
+              ? {
+                  en: `Align package.json's “license” field with the repo license (${spdx}) so npm metadata stops contradicting the repo.`,
+                  zh: `把 package.json 的 license 字段改成与仓库一致（${spdx}），别让 npm 元数据和仓库互相矛盾。`,
+                }
+              : {
+                  en: 'Name the license in the README (e.g. “Licensed under GPL-2.0”) so adopters don’t have to guess.',
+                  zh: '在 README 里写明协议（如「基于 GPL-2.0 授权」），让采用者不必猜。',
+                },
       impact: 'high',
     })
   );
@@ -65,9 +89,17 @@ export function trustChecks(f) {
   const testWorkflow = (f.workflows?.workflows ?? []).some((w) => /test|ci|check/i.test(w.name ?? w.path ?? ''));
   const pkgTest = Boolean(f.packageJson?.scripts?.test);
   const testsDetected = testDir || testConfig || testWorkflow || pkgTest;
+  // A refused /contents fetch must not read as "no tests at the root".
+  const contentsUnknown = f.contentsKnown === false;
   out.push(
     check('tests', 'trust', { en: 'Tests detected', zh: '检测到测试' }, {
-      status: testsDetected ? 'pass' : f.hasManifest || testWorkflow ? 'fail' : 'warn',
+      status: testsDetected
+        ? 'pass'
+        : f.hasManifest || testWorkflow
+          ? 'fail'
+          : contentsUnknown
+            ? 'skip'
+            : 'warn',
       detail: testDir
         ? { en: 'Found a test directory at the root.', zh: '根目录找到了测试目录。' }
         : testConfig
@@ -76,7 +108,9 @@ export function trustChecks(f) {
             ? { en: 'package.json has a test script.', zh: 'package.json 定义了 test 脚本。' }
             : testWorkflow
               ? { en: 'A CI workflow appears to run tests.', zh: '某个 CI workflow 似乎会跑测试。' }
-              : f.hasManifest
+              : contentsUnknown
+                ? { en: 'Root file list unavailable (API refused) — test signals unverifiable; not counted against you.', zh: '根目录文件列表不可用（API 拒绝）——无法核验测试信号，不计入评分。' }
+                : f.hasManifest
                 ? { en: 'No test directory, config, test script, or test workflow found.', zh: '没有找到测试目录、测试配置、测试脚本或测试 workflow。' }
                 : {
                     en: 'No root-level test signals. Projects without a package manifest (kernel, native code) often keep tests in subdirectories this check can’t see.',
@@ -96,12 +130,15 @@ export function trustChecks(f) {
   );
 
   const ciCount = f.workflows?.total_count ?? 0;
+  const workflowsUnknown = f.workflowsKnown === false;
   out.push(
     check('ci', 'trust', { en: 'CI configured', zh: '配置了 CI' }, {
-      status: ciCount >= 1 ? 'pass' : 'warn',
-      detail: ciCount
-        ? { en: `${ciCount} GitHub Actions workflow(s).`, zh: `有 ${ciCount} 个 GitHub Actions workflow。` }
-        : { en: 'No GitHub Actions workflows found (CI may exist off-GitHub).', zh: '没有找到 GitHub Actions workflow（CI 也可能在 GitHub 之外）。' },
+      status: workflowsUnknown ? 'skip' : ciCount >= 1 ? 'pass' : 'warn',
+      detail: workflowsUnknown
+        ? { en: 'Workflows data unavailable (API refused) — not counted against you.', zh: 'workflow 数据不可用（API 拒绝）——不计入评分。' }
+        : ciCount
+          ? { en: `${ciCount} GitHub Actions workflow(s).`, zh: `有 ${ciCount} 个 GitHub Actions workflow。` }
+          : { en: 'No GitHub Actions workflows found (CI may exist off-GitHub).', zh: '没有找到 GitHub Actions workflow（CI 也可能在 GitHub 之外）。' },
       fix: {
         en: 'Add a CI workflow (build + test) and show its badge at the top of the README.',
         zh: '加一个 CI workflow（构建 + 测试），并把徽章放到 README 顶部。',
@@ -110,27 +147,33 @@ export function trustChecks(f) {
     })
   );
 
-  const days = f.pushedAt ? daysBetween(new Date(f.pushedAt), now) : Infinity;
+  const days = f.pushedAt ? daysBetween(new Date(f.pushedAt), now) : null;
   out.push(
     check('recent-activity', 'trust', { en: 'Recent activity (90d)', zh: '近期有提交（90 天内）' }, {
-      status: days <= 90 ? 'pass' : days <= 180 ? 'warn' : 'fail',
-      detail: Number.isFinite(days)
+      // Unknown push time is not "abandoned" — skip instead of fabricating.
+      status: days === null ? 'skip' : days <= 90 ? 'pass' : days <= 180 ? 'warn' : 'fail',
+      detail: days !== null
         ? { en: `Last push ${days} day(s) ago.`, zh: `最后一次提交是 ${days} 天前。` }
-        : { en: 'Unknown last-push time.', zh: '未知最后提交时间。' },
-      fix: f.isArchived
+        : { en: 'Unknown last-push time (API refused) — not counted against you.', zh: '未知最后提交时间（API 拒绝）——不计入评分。' },
+      fix: days === null
         ? {
-            en: 'This repo is archived and cannot be updated. Consider unarchiving, or point visitors to an active successor in the README.',
-            zh: '仓库已归档、无法更新。考虑解除归档，或在 README 里指引用户前往活跃的继任项目。',
+            en: 'Last-push time could not be fetched this run; re-run later. Keep a heartbeat once it’s measurable.',
+            zh: '本次未能获取最后提交时间，稍后再试。可测量之后保持提交心跳即可。',
           }
-        : days > 180
+        : f.isArchived
           ? {
-              en: 'The repo looks abandoned. Push an update, or add a note about maintenance status at the top of the README.',
-              zh: '仓库看起来像弃坑了。推一个更新，或在 README 顶部说明维护状态。',
+              en: 'This repo is archived and cannot be updated. Consider unarchiving, or point visitors to an active successor in the README.',
+              zh: '仓库已归档、无法更新。考虑解除归档，或在 README 里指引用户前往活跃的继任项目。',
             }
-          : {
-              en: 'Keep a heartbeat: even small merged PRs keep the repo looking alive.',
-              zh: '保持心跳：即使合并小 PR 也能让仓库看起来还活着。',
-            },
+          : days > 180
+            ? {
+                en: 'The repo looks abandoned. Push an update, or add a note about maintenance status at the top of the README.',
+                zh: '仓库看起来像弃坑了。推一个更新，或在 README 顶部说明维护状态。',
+              }
+            : {
+                en: 'Keep a heartbeat: even small merged PRs keep the repo looking alive.',
+                zh: '保持心跳：即使合并小 PR 也能让仓库看起来还活着。',
+              },
       impact: 'high',
     })
   );
