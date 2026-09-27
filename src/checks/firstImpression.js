@@ -57,11 +57,17 @@ export function firstImpressionChecks(f) {
   );
 
   if (!f.readme) {
+    const unknown = f.readmeState === 'unknown';
     out.push(
       check('readme-exists', 'first-impression', { en: 'README exists', zh: 'README 存在' }, {
-        status: 'fail',
-        detail: { en: 'No README found.', zh: '没有找到 README。' },
-        fix: { en: 'Add a README.md — without one, a repo is invisible.', zh: '补一个 README.md——没有 README 的仓库等于隐身。' },
+        // A refused /readme fetch is not "no README".
+        status: unknown ? 'skip' : 'fail',
+        detail: unknown
+          ? { en: 'README could not be fetched (API refused) — not counted against you.', zh: 'README 未能获取（API 拒绝）——不计入评分。' }
+          : { en: 'No README found.', zh: '没有找到 README。' },
+        fix: unknown
+          ? { en: 'Re-run later to fetch the README (API refused this time).', zh: '稍后再跑一次以获取 README（本次 API 拒绝）。' }
+          : { en: 'Add a README.md — without one, a repo is invisible.', zh: '补一个 README.md——没有 README 的仓库等于隐身。' },
         impact: 'high',
       })
     );

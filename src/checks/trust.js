@@ -89,14 +89,16 @@ export function trustChecks(f) {
   const testWorkflow = (f.workflows?.workflows ?? []).some((w) => /test|ci|check/i.test(w.name ?? w.path ?? ''));
   const pkgTest = Boolean(f.packageJson?.scripts?.test);
   const testsDetected = testDir || testConfig || testWorkflow || pkgTest;
-  // A refused /contents fetch must not read as "no tests at the root".
+  // A refused /contents fetch must not read as "no tests at the root"; a
+  // refused package.json must not read as "no test script".
   const contentsUnknown = f.contentsKnown === false;
+  const pkgUnknown = f.packageJsonKnown === false;
   out.push(
     check('tests', 'trust', { en: 'Tests detected', zh: '检测到测试' }, {
       status: testsDetected
         ? 'pass'
         : f.hasManifest || testWorkflow
-          ? 'fail'
+          ? (pkgUnknown ? 'skip' : 'fail')
           : contentsUnknown
             ? 'skip'
             : 'warn',
@@ -110,7 +112,9 @@ export function trustChecks(f) {
               ? { en: 'A CI workflow appears to run tests.', zh: '某个 CI workflow 似乎会跑测试。' }
               : contentsUnknown
                 ? { en: 'Root file list unavailable (API refused) — test signals unverifiable; not counted against you.', zh: '根目录文件列表不可用（API 拒绝）——无法核验测试信号，不计入评分。' }
-                : f.hasManifest
+                : pkgUnknown && f.hasManifest
+                  ? { en: 'package.json could not be fetched (API refused) — test script unverifiable; not counted against you.', zh: 'package.json 未能获取（API 拒绝）——无法核验 test 脚本，不计入评分。' }
+                  : f.hasManifest
                 ? { en: 'No test directory, config, test script, or test workflow found.', zh: '没有找到测试目录、测试配置、测试脚本或测试 workflow。' }
                 : {
                     en: 'No root-level test signals. Projects without a package manifest (kernel, native code) often keep tests in subdirectories this check can’t see.',

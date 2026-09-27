@@ -149,6 +149,62 @@ test('hero-visual: badge-only images are not a hero', () => {
   assert.match(c.detail.en, /[Bb]adge/);
 });
 
+test('parseReadme: fence closing respects marker char, length, and bare-line rule', () => {
+  // ~~~ fence is NOT closed by ``` (docs showing markdown examples)
+  const tilde = parseReadme([
+    '# t',
+    '',
+    '~~~md',
+    '# not a heading inside fence',
+    '```',
+    'nested triple backticks are content',
+    '```',
+    '~~~',
+    '',
+    'body',
+  ].join('\n'));
+  assert.equal(tilde.codeBlocks.length, 1);
+  assert.ok(!tilde.headings.some((h) => h.text === 'not a heading inside fence'));
+
+  // a 4-backtick fence survives an inner 3-backtick line
+  const quad = parseReadme([
+    '# q',
+    '',
+    '````md',
+    '```js',
+    'code();',
+    '```',
+    '````',
+    '',
+    'body',
+  ].join('\n'));
+  assert.equal(quad.codeBlocks.length, 1);
+  assert.equal(quad.codeBlocks[0].start, 3);
+  assert.equal(quad.codeBlocks[0].end, 7);
+});
+
+test('parseReadme: setext underlines inside code blocks and after list items are ignored', () => {
+  const md = [
+    '# t',
+    '',
+    '```yaml',
+    'key: value',
+    '---',
+    '```',
+    '',
+    '- list item',
+    '---',
+    '',
+    'Real section',
+    '===',
+  ].join('\n');
+  const r = parseReadme(md);
+  const texts = r.headings.map((h) => h.text);
+  assert.ok(!texts.includes('key: value'), 'fenced pair must not become a heading');
+  assert.ok(!texts.includes('- list item'), 'list item + --- is a thematic break, not a heading');
+  assert.ok(texts.includes('Real section'));
+});
+
 test('findInstallLine supports many ecosystems', () => {
   assert.equal(findInstallLine(['pip install requests']), 1);
   assert.equal(findInstallLine(['$ cargo add foo']), 1);
@@ -391,4 +447,28 @@ test('refused /contents and /workflows fetches degrade to skips, not "empty"', (
   assert.equal(checks.find((x) => x.id === 'ci').status, 'skip');
   // tests: no signals visible AND root list unknown -> skip (not warn)
   assert.equal(checks.find((x) => x.id === 'tests').status, 'skip');
+});
+
+test('a refused /readme fetch skips readme-exists instead of "No README found"', () => {
+  const p = badPayloads();
+  p.readme = null;
+  p.readmeState = 'unknown'; // transient API failure recorded by fetchPayloads
+  const facts = buildFacts(p, { now: new Date() });
+  const c = runChecks(facts).find((x) => x.id === 'readme-exists');
+  assert.equal(c.status, 'skip');
+  assert.match(c.detail.en, /API refused/);
+  // legacy fixture shape (no readmeState key) keeps the honest fail
+  const p2 = badPayloads();
+  const c2 = runChecks(buildFacts(p2, { now: new Date() })).find((x) => x.id === 'readme-exists');
+  assert.equal(c2.status, 'fail');
+});
+
+test('a refused package.json skips the tests check for manifest repos', () => {
+  const p = badPayloads();
+  p.contents = [{ name: 'package.json', type: 'file' }]; // manifest visible
+  p.packageJson = null;
+  p.packageJsonKnown = false; // the /contents/package.json fetch was refused
+  const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'tests');
+  assert.equal(c.status, 'skip');
+  assert.match(c.detail.en, /test script unverifiable|package\.json could not be fetched/);
 });

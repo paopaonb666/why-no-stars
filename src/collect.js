@@ -34,6 +34,8 @@ export function parseReadme(text) {
   const codeBlocks = [];
   let inFence = false;
   let fenceStart = 0;
+  let fenceChar = '`';
+  let fenceLen = 3;
   let badges = 0;
 
   const isBadgeUrl = (url) =>
@@ -62,26 +64,39 @@ export function parseReadme(text) {
         if (n <= 45 && badge) badges++;
       }
     }
-    if (/^(```|~~~)/.test(line.trim())) {
+    // CommonMark fence rules: a fence closes only on a bare line of the SAME
+    // char, at least as long as the opener. A ``` line inside a ~~~ fence (or
+    // inside a 4+-backtick fence) is content, not a boundary.
+    const t = line.trim();
+    const fence = t.match(/^(`{3,}|~{3,})/);
+    if (fence) {
       if (!inFence) {
         inFence = true;
+        fenceChar = fence[1][0];
+        fenceLen = fence[1].length;
         fenceStart = n;
       } else {
-        inFence = false;
-        codeBlocks.push({ start: fenceStart, end: n });
+        const close = t.match(/^(`{3,}|~{3,})\s*$/);
+        if (close && close[1][0] === fenceChar && close[1].length >= fenceLen) {
+          inFence = false;
+          codeBlocks.push({ start: fenceStart, end: n });
+        }
       }
     }
   });
 
-  // Setext headings (Title\n=====) — used by the Linux kernel README.
+  // Setext headings (Title\n=====) — used by the Linux kernel README. Skip
+  // anything inside recorded code blocks, list items, and tables: a `---`
+  // under a line of a fenced YAML/diff example is not a heading.
+  const insideCodeBlock = (n) => codeBlocks.some((b) => n >= b.start && n <= b.end);
   if (!inFence) {
     for (let i = 0; i < lines.length - 1; i++) {
-      const t = lines[i].trim();
+      const st = lines[i].trim();
       const u = lines[i + 1].trim();
-      if (t && !headings.some((h) => h.line === i + 1)) {
-        if (/^={2,}$/.test(u)) headings.push({ level: 1, text: t, line: i + 1 });
-        else if (/^-{2,}$/.test(u) && !/^[-*+]?\s*\[[ x]\]/i.test(t) && !t.startsWith('|')) headings.push({ level: 2, text: t, line: i + 1 });
-      }
+      if (!st || insideCodeBlock(i + 1) || insideCodeBlock(i + 2)) continue;
+      if (headings.some((h) => h.line === i + 1)) continue;
+      if (/^={2,}$/.test(u) && !/^[-*+]\s/.test(st)) headings.push({ level: 1, text: st, line: i + 1 });
+      else if (/^-{2,}$/.test(u) && !/^[-*+]\s/.test(st) && !/^[-*+]?\s*\[[ x]\]/i.test(st) && !st.startsWith('|')) headings.push({ level: 2, text: st, line: i + 1 });
     }
   }
   headings.sort((a, b) => a.line - b.line);
@@ -181,6 +196,9 @@ export function buildFacts(p, { now = new Date() } = {}) {
     contentsKnown,
     hasManifest: rootFiles.some((f) => manifestNames.includes(f.name)),
     packageJson,
+    // Legacy fixtures predate the known/unknown flags: a payload present in
+    // the fixture counts as known, null counts as known-absent.
+    packageJsonKnown: p.packageJsonKnown ?? p.packageJson != null,
     workflows,
     workflowsKnown,
     // These three may be null when the API refused (e.g. contributor lists of
@@ -204,6 +222,9 @@ export function buildFacts(p, { now = new Date() } = {}) {
     community: p.community ?? null,
 
     readme: readmeText ? parseReadme(readmeText) : null,
+    // 'present' | 'absent' | 'unknown' — unknown means the fetch was refused;
+    // legacy fixtures without the key keep the old absent/present dichotomy.
+    readmeState: p.readmeState ?? (readmeText ? 'present' : 'absent'),
 
     now,
   };
@@ -275,7 +296,15 @@ export async function fetchPayloads(client, owner, name, { langOverride } = {}) 
     stargazers: ok(stargazers),
     events: ok(events),
     packageJson: ok(packageJson),
+    // Transient failures must not read as "no README / no package.json":
+    // known = fulfilled or a clean 404 (genuine absence).
+    packageJsonKnown: packageJson.status === 'fulfilled' || packageJson.reason instanceof NotFoundError,
     readme: ok(readme),
+    readmeState: ok(readme)
+      ? 'present'
+      : (readme.status === 'fulfilled' || readme.reason instanceof NotFoundError)
+        ? 'absent'
+        : 'unknown',
     workflows: ok(workflows),
     issueTemplateProbe: probeState(communityPayload?.files?.issue_template, templateProbeResult),
     securityProbe: probeState(communityPayload?.files?.security_policy, securityProbeResult),
