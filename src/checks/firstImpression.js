@@ -20,16 +20,24 @@ export function firstImpressionChecks(f) {
   );
 
   const topics = f.topics ?? [];
+  const topicsOver = topics.length > 20; // GitHub hard-caps repos at 20 topics
   out.push(
     check('topics', 'first-impression', { en: 'Topics (3+)', zh: 'Topics 标签（3 个以上）' }, {
-      status: topics.length >= 3 ? 'pass' : topics.length >= 1 ? 'warn' : 'fail',
-      detail: topics.length
-        ? { en: topics.join(', '), zh: topics.join('、') }
-        : { en: 'No topics set.', zh: '没有设置任何 topic。' },
-      fix: {
-        en: 'Add 3–8 topics mixing domain (cli, api) and ecosystem (nodejs, rust). They drive GitHub search & topic pages.',
-        zh: '加 3–8 个 topic，混合领域词（cli、api）和生态词（nodejs、rust）。它们直接决定 GitHub 搜索和 topic 页的曝光。',
-      },
+      status: topicsOver ? 'warn' : topics.length >= 3 ? 'pass' : topics.length >= 1 ? 'warn' : 'fail',
+      detail: topics.length === 0
+        ? { en: 'No topics set.', zh: '没有设置任何 topic。' }
+        : topicsOver
+          ? { en: `${topics.length} topics — GitHub caps repos at 20, so the extra ones are dropped.`, zh: `有 ${topics.length} 个 topic——GitHub 上限是 20 个，多出的会被直接丢弃。` }
+          : { en: topics.join(', '), zh: topics.join('、') },
+      fix: topicsOver
+        ? {
+            en: 'Trim to the 5–8 topics that actually drive discovery (domain words + ecosystem words); the rest are silently discarded.',
+            zh: '精简到 5–8 个真正带来曝光的 topic（领域词 + 生态词）；多出的会被 GitHub 静默丢弃。',
+          }
+        : {
+            en: 'Add 3–8 topics mixing domain (cli, api) and ecosystem (nodejs, rust). They drive GitHub search & topic pages.',
+            zh: '加 3–8 个 topic，混合领域词（cli、api）和生态词（nodejs、rust）。它们直接决定 GitHub 搜索和 topic 页的曝光。',
+          },
       impact: 'high',
     })
   );

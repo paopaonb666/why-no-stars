@@ -237,3 +237,54 @@ test('community checks: probe knowledge survives a null community profile', () =
   assert.equal(checks.find((c) => c.id === 'security-policy').status, 'pass');
   assert.equal(checks.find((c) => c.id === 'issue-template').status, 'skip'); // still unknown
 });
+
+test('install detection: deno/dlx/npm exec/uv sync and shouting case', () => {
+  assert.equal(findInstallLine(['deno add jsr:@std/path']), 1);
+  assert.equal(findInstallLine(['pnpm dlx shadcn@latest init']), 1);
+  assert.equal(findInstallLine(['npm exec --yes tsx src/main.ts']), 1);
+  assert.equal(findInstallLine(['uv sync --all-extras']), 1);
+  assert.equal(findInstallLine(['NPM INSTALL']), 1);
+  assert.equal(findInstallLine(['(cargo install ripgrep)']), 1);
+  assert.equal(findInstallLine(['just run the tests']), null);
+});
+
+test('license check: package.json contradicting the repo license warns', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ license: { spdx_id: 'MIT' } });
+  p.community = { files: { license: { name: 'MIT' } } };
+  const pkg = (obj) => ({ encoding: 'base64', content: Buffer.from(JSON.stringify(obj)).toString('base64') });
+  p.packageJson = pkg({ license: 'ISC' });
+  const c = runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'license');
+  assert.equal(c.status, 'warn');
+  assert.match(c.detail.en, /package\.json says .ISC/);
+});
+
+test('license check: matching or dual-license package.json stays pass', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ license: { spdx_id: 'MIT' } });
+  p.community = { files: { license: { name: 'MIT' } } };
+  const pkg = (obj) => ({ encoding: 'base64', content: Buffer.from(JSON.stringify(obj)).toString('base64') });
+  p.packageJson = pkg({ license: 'MIT' });
+  assert.equal(runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'license').status, 'pass');
+  p.packageJson = pkg({ license: '(MIT OR Apache-2.0)' });
+  assert.equal(runChecks(buildFacts(p, { now: new Date() })).find((x) => x.id === 'license').status, 'pass');
+});
+
+test('topics check: more than 20 topics warns about the GitHub cap', () => {
+  const p = badPayloads();
+  p.readme = { encoding: 'base64', content: Buffer.from('# t\n').toString('base64') };
+  p.repo = baseRepo({ topics: Array.from({ length: 21 }, (_, i) => `topic${i}`) });
+  const c = runChecks(buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') })).find((x) => x.id === 'topics');
+  assert.equal(c.status, 'warn');
+  assert.match(c.detail.en, /caps repos at 20/);
+});
+
+test('releases check: recent pushes but a stale latest release warns', () => {
+  const p = badPayloads();
+  p.repo = baseRepo({ pushed_at: '2026-09-20T00:00:00Z' });
+  p.releases = [{ name: 'v1.0.0', tag_name: 'v1.0.0', published_at: '2025-01-01T00:00:00Z' }];
+  p.tags = [{ name: 'v1.0.0' }];
+  const c = runChecks(buildFacts(p, { now: new Date('2026-09-27T00:00:00Z') })).find((x) => x.id === 'releases');
+  assert.equal(c.status, 'warn');
+  assert.match(c.detail.en, /days old while code was pushed/);
+});

@@ -4,8 +4,12 @@
 
 import { RateLimitError, NotFoundError } from './api.js';
 
+// Case-insensitive on purpose: READMEs shout ("NPM INSTALL") and prose often
+// mentions the command. Recognizes the install one-liners of the major
+// ecosystems (npm/pnpm/yarn/bun/deno, pip/uv, cargo, go, brew, conda, gem,
+// composer, dotnet, docker) plus the runner forms (npx/uvx/dlx/npm exec).
 const INSTALL_RE =
-  /(?:^|[\s`(])(npm (?:i|install|ci)\b|pnpm (?:add|install)\b|yarn (?:add|install)\b|bun (?:add|install)\b|pip install\b|pip3 install\b|uv (?:pip install|add|tool install|run)\b|cargo (?:add|install)\b|go install\b|brew install\b|conda install\b|gem install\b|composer require\b|dotnet add package\b|docker (?:run|pull)\b|npx \S+|uvx \S+)/;
+  /(?:^|[\s`(])(npm (?:i|install|ci|exec)\b|npx \S+|pnpm (?:add|install|dlx)\b|yarn (?:add|install|dlx)\b|bun (?:add|install|dlx)\b|pip3? install\b|uv (?:pip install|add|tool install|run|sync)\b|uvx \S+|cargo (?:add|install|binstall)\b|go install\b|brew install\b|conda install\b|gem install\b|composer require\b|dotnet (?:add package|tool install)\b|docker (?:run|pull)\b|deno (?:add|install)\b)/i;
 
 export function decodeBase64File(payload) {
   if (!payload || payload.encoding !== 'base64' || typeof payload.content !== 'string') return null;

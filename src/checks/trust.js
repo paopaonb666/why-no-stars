@@ -15,23 +15,45 @@ export function trustChecks(f) {
 
   const licenseFile = f.community?.files?.license ?? null;
   const spdx = f.repo?.license?.spdx_id ?? f.repo?.license?.name ?? null;
+  const spdxValid = spdx && spdx !== 'NOASSERTION' && spdx !== 'Other';
+  // A package.json contradicting the repo license misleads everyone arriving
+  // from npm. Dual-license expressions ("MIT OR Apache-2.0") are left alone.
+  const pkgLicense = typeof f.packageJson?.license === 'string'
+    ? f.packageJson.license
+    : f.packageJson?.license?.type ?? null;
+  const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const licenseMismatch = Boolean(
+    licenseFile && spdxValid && pkgLicense &&
+    !/ (?:or|and) |,|\(/i.test(pkgLicense) &&
+    norm(spdx) !== norm(pkgLicense)
+  );
   out.push(
     check('license', 'trust', { en: 'License', zh: '开源协议' }, {
-      status: !licenseFile ? 'fail' : spdx && spdx !== 'NOASSERTION' && spdx !== 'Other' ? 'pass' : 'warn',
+      status: !licenseFile ? 'fail' : licenseMismatch ? 'warn' : spdxValid ? 'pass' : 'warn',
       detail: !licenseFile
         ? { en: 'No detectable license.', zh: '没有可识别的开源协议。' }
-        : spdx && spdx !== 'NOASSERTION' && spdx !== 'Other'
-          ? { en: `${spdx} (license file present).`, zh: `${spdx}（已检测到协议文件）。` }
-          : { en: 'License file present but not auto-identified (custom or variant license).', zh: '检测到协议文件，但无法自动识别具体协议（自定义或变体协议）。' },
+        : licenseMismatch
+          ? {
+              en: `${spdx} (license file), but package.json says “${pkgLicense}”.`,
+              zh: `仓库协议是 ${spdx}（有协议文件），但 package.json 写的是「${pkgLicense}」。`,
+            }
+          : spdxValid
+            ? { en: `${spdx} (license file present).`, zh: `${spdx}（已检测到协议文件）。` }
+            : { en: 'License file present but not auto-identified (custom or variant license).', zh: '检测到协议文件，但无法自动识别具体协议（自定义或变体协议）。' },
       fix: !licenseFile
         ? {
             en: 'Add a LICENSE (MIT/Apache-2.0). No license = legally unusable = nobody stars or adopts it.',
             zh: '加 LICENSE 文件（MIT/Apache-2.0）。没有协议 = 法律上不可用 = 没人会采用或收藏。',
           }
-        : {
-            en: 'Name the license in the README (e.g. “Licensed under GPL-2.0”) so adopters don’t have to guess.',
-            zh: '在 README 里写明协议（如「基于 GPL-2.0 授权」），让采用者不必猜。',
-          },
+        : licenseMismatch
+          ? {
+              en: `Align package.json's “license” field with the repo license (${spdx}) so npm metadata stops contradicting the repo.`,
+              zh: `把 package.json 的 license 字段改成与仓库一致（${spdx}），别让 npm 元数据和仓库互相矛盾。`,
+            }
+          : {
+              en: 'Name the license in the README (e.g. “Licensed under GPL-2.0”) so adopters don’t have to guess.',
+              zh: '在 README 里写明协议（如「基于 GPL-2.0 授权」），让采用者不必猜。',
+            },
       impact: 'high',
     })
   );
@@ -114,12 +136,24 @@ export function trustChecks(f) {
   );
 
   const releasesKnown = Array.isArray(f.releases);
+  // Code pushed recently but no release in 180+ days: the project is alive,
+  // its releases aren't — that's a fixable trust leak, so warn (not fail).
+  const DAY = 86400000;
+  const latestPublishedAt = releasesKnown && f.releases.length ? f.releases[0]?.publishedAt : null;
+  const latestMs = latestPublishedAt ? Date.parse(latestPublishedAt) : null;
+  const pushedMs = f.pushedAt ? Date.parse(f.pushedAt) : null;
+  const staleRelease = Boolean(
+    latestMs && pushedMs &&
+    f.now - latestMs > 180 * DAY &&
+    f.now - pushedMs <= 90 * DAY
+  );
+  const staleDays = latestMs ? Math.round((f.now - latestMs) / DAY) : null;
   out.push(
     check('releases', 'trust', { en: 'Releases / tags', zh: 'Release / 标签' }, {
       status: inherited || !releasesKnown
         ? 'skip'
         : f.releases.length >= 1
-          ? 'pass'
+          ? staleRelease ? 'warn' : 'pass'
           : (f.tags?.length ?? 0) >= 1
             ? 'warn'
             : 'fail',
@@ -128,14 +162,24 @@ export function trustChecks(f) {
         : !releasesKnown
           ? { en: 'Release data unavailable (API refused) — not counted against you.', zh: 'release 数据不可用（API 拒绝）——不计入评分。' }
           : f.releases.length
-            ? { en: `${f.releases.length} release(s), latest “${f.releases[0].tag}”.`, zh: `${f.releases.length} 个 release，最新 ${f.releases[0].tag}。` }
+            ? staleRelease
+              ? {
+                  en: `${f.releases.length} release(s), latest “${f.releases[0].tag}” — but it is ${staleDays} days old while code was pushed ${Math.round((f.now - pushedMs) / DAY)} days ago.`,
+                  zh: `有 ${f.releases.length} 个 release，最新 ${f.releases[0].tag}——但它已经是 ${staleDays} 天前的事，而代码 ${Math.round((f.now - pushedMs) / DAY)} 天前还在更新。`,
+                }
+              : { en: `${f.releases.length} release(s), latest “${f.releases[0].tag}”.`, zh: `${f.releases.length} 个 release，最新 ${f.releases[0].tag}。` }
             : (f.tags?.length ?? 0)
               ? { en: `${f.tags.length} tag(s) but no published release.`, zh: `有 ${f.tags.length} 个 tag，但没有发布过 release。` }
               : { en: 'No tags and no releases.', zh: '没有 tag 也没有 release。' },
-      fix: {
-        en: 'Publish a GitHub Release with readable notes. Releases trigger watcher emails and look maintained.',
-        zh: '发布一个带可读 changelog 的 GitHub Release。Release 会触发 watch 通知，也显得项目有维护。',
-      },
+      fix: staleRelease
+        ? {
+            en: 'Cut a release for the work you have already pushed — watchers get notified and the project stops looking stalled.',
+            zh: '为已经推送的改动发一个 release——watch 用户会收到通知，项目也不再显得停滞。',
+          }
+        : {
+            en: 'Publish a GitHub Release with readable notes. Releases trigger watcher emails and look maintained.',
+            zh: '发布一个带可读 changelog 的 GitHub Release。Release 会触发 watch 通知，也显得项目有维护。',
+          },
       impact: 'medium',
     })
   );
