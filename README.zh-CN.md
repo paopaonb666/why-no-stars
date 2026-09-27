@@ -64,6 +64,7 @@ npx github:paopaonb666/why-no-stars 我的项目 --zh               # 中文输�
 
 > **无需 API key 也能跑。** 无 token 的 GitHub 限额是 60 次/小时（约 4 次体检）。
 > 配置 `GITHUB_TOKEN` 后提升到 5000 次/小时。私有仓库加 token 同样可用。
+> 首次运行需要下载工具（npm 拉取约 30 秒），之后每次都很快。
 
 ## 六大支柱
 
