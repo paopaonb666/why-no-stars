@@ -1,0 +1,354 @@
+{
+  "repo": {
+    "fullName": "sindresorhus/got",
+    "stars": 14948,
+    "language": "TypeScript",
+    "description": "🌐 Human-friendly and powerful HTTP request library for Node.js",
+    "topics": [
+      "http",
+      "http-client",
+      "http-request",
+      "https",
+      "nodejs",
+      "npm-package"
+    ],
+    "pushedAt": "2026-09-20T13:25:54Z"
+  },
+  "overall": 91,
+  "grade": "S",
+  "benchmark": {
+    "lowerPct": 100,
+    "upperPct": 100,
+    "buckets": [
+      16748515,
+      1854197,
+      151812,
+      30360,
+      5594,
+      830
+    ],
+    "peerLanguage": "TypeScript",
+    "totalPeers": 18791308
+  },
+  "pillars": [
+    {
+      "id": "first-impression",
+      "name": "First impression",
+      "score": 75,
+      "weight": 25
+    },
+    {
+      "id": "quickstart",
+      "name": "Time-to-hello-world",
+      "score": 100,
+      "weight": 20
+    },
+    {
+      "id": "trust",
+      "name": "Trust & maintenance",
+      "score": 100,
+      "weight": 20
+    },
+    {
+      "id": "community",
+      "name": "Community health",
+      "score": 90,
+      "weight": 15
+    },
+    {
+      "id": "discoverability",
+      "name": "Discoverability",
+      "score": 88,
+      "weight": 10
+    },
+    {
+      "id": "momentum",
+      "name": "Momentum",
+      "score": 100,
+      "weight": 10
+    }
+  ],
+  "checks": [
+    {
+      "id": "description",
+      "pillar": "first-impression",
+      "title": "Repo description",
+      "status": "pass",
+      "impact": "high",
+      "detail": "“🌐 Human-friendly and powerful HTTP request library for Node.js” (63 chars)",
+      "fix": "Write a 15–130 char description: what it does + for whom + the differentiator."
+    },
+    {
+      "id": "topics",
+      "pillar": "first-impression",
+      "title": "Topics (3+)",
+      "status": "pass",
+      "impact": "high",
+      "detail": "http, http-client, http-request, https, nodejs, npm-package",
+      "fix": "Add 3–8 topics mixing domain (cli, api) and ecosystem (nodejs, rust). They drive GitHub search & topic pages."
+    },
+    {
+      "id": "homepage",
+      "pillar": "first-impression",
+      "title": "Homepage URL",
+      "status": "warn",
+      "impact": "medium",
+      "detail": "No homepage URL in the About sidebar.",
+      "fix": "Set the repo homepage (docs site, demo, or README anchor) — it is the only clickable field in the About box."
+    },
+    {
+      "id": "readme-exists",
+      "pillar": "first-impression",
+      "title": "README exists",
+      "status": "pass",
+      "impact": "low",
+      "detail": "475 lines",
+      "fix": ""
+    },
+    {
+      "id": "hero-visual",
+      "pillar": "first-impression",
+      "title": "Hero image / GIF above the fold",
+      "status": "warn",
+      "impact": "high",
+      "detail": "First image at line 54",
+      "fix": "Put a screenshot/GIF/demo within the first ~30 lines. Visitors decide in seconds; text alone rarely converts."
+    },
+    {
+      "id": "install-above-fold",
+      "pillar": "first-impression",
+      "title": "Install command near the top",
+      "status": "warn",
+      "impact": "high",
+      "detail": "First installable command at line 71",
+      "fix": "Move the copy-paste install one-liner into the first screen of the README (top ~60 lines)."
+    },
+    {
+      "id": "badges",
+      "pillar": "first-impression",
+      "title": "Badges (1–12)",
+      "status": "warn",
+      "impact": "low",
+      "detail": "0 badge(s) near the top",
+      "fix": "Add 3–5 badges (build, npm/pypi version, license). They signal “this is maintained”."
+    },
+    {
+      "id": "name-quality",
+      "pillar": "first-impression",
+      "title": "Repo name quality",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "“got”",
+      "fix": "Pick a memorable, searchable name: 3–24 chars, hint at what it does, avoid test/demo/tmp prefixes."
+    },
+    {
+      "id": "install-oneliner",
+      "pillar": "quickstart",
+      "title": "Copy-paste install command",
+      "status": "pass",
+      "impact": "high",
+      "detail": "Found at README line 71",
+      "fix": "Add an obvious one-liner: `npm i your-pkg` / `pip install your-pkg` / `cargo add ...`. This single line is the #1 conversion lever."
+    },
+    {
+      "id": "quickstart-code",
+      "pillar": "quickstart",
+      "title": "Quickstart code block",
+      "status": "pass",
+      "impact": "high",
+      "detail": "First code block at line 70",
+      "fix": "Add a “Quick start” section with a runnable snippet near the top — show the happy path in < 10 lines."
+    },
+    {
+      "id": "examples-dir",
+      "pillar": "quickstart",
+      "title": "Examples / docs directory",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "Found ./documentation/",
+      "fix": "Add an examples/ folder with 1–3 minimal runnable cases. Browsers of code trust examples."
+    },
+    {
+      "id": "manifest",
+      "pillar": "quickstart",
+      "title": "Package manifest at root",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "Found a package manifest (package.json, pyproject.toml, Cargo.toml, …).",
+      "fix": "Keep the ecosystem manifest (package.json / pyproject.toml / Cargo.toml / go.mod) at the repo root so tools and humans recognize the stack instantly."
+    },
+    {
+      "id": "docs-link",
+      "pillar": "quickstart",
+      "title": "Docs / guide pointer",
+      "status": "pass",
+      "impact": "low",
+      "detail": "README has a docs/guide section.",
+      "fix": "Link fuller docs (wiki, docs site, or ./docs) from the top of the README."
+    },
+    {
+      "id": "license",
+      "pillar": "trust",
+      "title": "License",
+      "status": "pass",
+      "impact": "high",
+      "detail": "MIT License",
+      "fix": "Add a LICENSE (MIT/Apache-2.0). No license = legally unusable = nobody stars or adopts it."
+    },
+    {
+      "id": "tests",
+      "pillar": "trust",
+      "title": "Tests detected",
+      "status": "pass",
+      "impact": "high",
+      "detail": "Found a test directory at the root.",
+      "fix": "Add even a minimal test suite + make it visible (tests/ dir, test script, CI badge). Tests are the strongest trust signal."
+    },
+    {
+      "id": "ci",
+      "pillar": "trust",
+      "title": "CI configured",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "1 GitHub Actions workflow(s).",
+      "fix": "Add a CI workflow (build + test) and show its badge at the top of the README."
+    },
+    {
+      "id": "recent-activity",
+      "pillar": "trust",
+      "title": "Recent activity (90d)",
+      "status": "pass",
+      "impact": "high",
+      "detail": "Last push 7 day(s) ago.",
+      "fix": "Keep a heartbeat: even small merged PRs keep the repo looking alive."
+    },
+    {
+      "id": "releases",
+      "pillar": "trust",
+      "title": "Releases / tags",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "10 release(s), latest “v16.0.0”.",
+      "fix": "Publish a GitHub Release with readable notes. Releases trigger watcher emails and look maintained."
+    },
+    {
+      "id": "contributors",
+      "pillar": "trust",
+      "title": "Contributors (2+)",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "100 contributor(s) visible.",
+      "fix": "Invite contributions: label issues as “good first issue”, and list contributors in the README."
+    },
+    {
+      "id": "semver",
+      "pillar": "trust",
+      "title": "Semver tags",
+      "status": "pass",
+      "impact": "low",
+      "detail": "30/30 tags are semver-shaped.",
+      "fix": "Tag versions as v1.2.3. Semver communicates stability to humans and package managers."
+    },
+    {
+      "id": "issue-template",
+      "pillar": "community",
+      "title": "Issue template",
+      "status": "warn",
+      "impact": "medium",
+      "detail": "No issue template.",
+      "fix": "Add .github/ISSUE_TEMPLATE with bug + feature forms. Triage cost drops, signal rises."
+    },
+    {
+      "id": "pr-template",
+      "pillar": "community",
+      "title": "PR template",
+      "status": "pass",
+      "impact": "low",
+      "detail": "Found: [object Object]",
+      "fix": "Add a short PULL_REQUEST_TEMPLATE.md (what/why/how tested)."
+    },
+    {
+      "id": "contributing",
+      "pillar": "community",
+      "title": "CONTRIBUTING guide",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "Found: [object Object]",
+      "fix": "Add CONTRIBUTING.md: how to set up dev env, run tests, and open a PR. Lower the barrier and outsiders appear."
+    },
+    {
+      "id": "discussions",
+      "pillar": "community",
+      "title": "Discussions enabled",
+      "status": "pass",
+      "impact": "low",
+      "detail": "Discussions are on.",
+      "fix": "Enable Discussions and add an ideas/pinned welcome post. It gives shy users a place to land."
+    },
+    {
+      "id": "coc",
+      "pillar": "community",
+      "title": "Code of conduct",
+      "status": "pass",
+      "impact": "low",
+      "detail": "Found: [object Object]",
+      "fix": "Add a CODE_OF_CONDUCT.md (GitHub provides a template in one click)."
+    },
+    {
+      "id": "not-fork-not-archived",
+      "pillar": "discoverability",
+      "title": "Not a fork / not archived",
+      "status": "pass",
+      "impact": "high",
+      "detail": "Original, active repo.",
+      "fix": "If you intend to stop maintaining, say so in the README instead of archiving silently."
+    },
+    {
+      "id": "readme-depth",
+      "pillar": "discoverability",
+      "title": "README depth (50–1200 lines)",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "475 lines",
+      "fix": "Too long: move details into docs/ and keep the README to one screen of decision-making info."
+    },
+    {
+      "id": "title-match",
+      "pillar": "discoverability",
+      "title": "README title matches repo name",
+      "status": "warn",
+      "impact": "low",
+      "detail": "H2: “Install”",
+      "fix": "Start the README with “# <repo-name> — one-line pitch”. Exact-name headings win browser tabs, search, and screenshots."
+    },
+    {
+      "id": "language-focus",
+      "pillar": "discoverability",
+      "title": "Clear primary language",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "TypeScript",
+      "fix": "A detected primary language puts you in language topic pages and enables peer benchmarking."
+    },
+    {
+      "id": "recent-stars",
+      "pillar": "momentum",
+      "title": "Stars in the last 28 days",
+      "status": "pass",
+      "impact": "high",
+      "detail": "Events feed shows ≥20 star(s) recently (lower bound; timestamps not paged).",
+      "fix": "Every push/announcement should ride a channel: Show HN, r/SideProject, dev communities, or a “what changed” post. Star velocity follows exposure."
+    },
+    {
+      "id": "star-velocity",
+      "pillar": "momentum",
+      "title": "Stars per week since creation",
+      "status": "pass",
+      "impact": "medium",
+      "detail": "22.9 stars/week over 652 weeks.",
+      "fix": "If velocity is near zero, treat the README as a landing page and re-launch the project (rename, rewrite the pitch, post again)."
+    }
+  ],
+  "generatedAt": "2026-09-27T06:50:49.408Z",
+  "tool": "why-no-stars v1.0.0"
+}

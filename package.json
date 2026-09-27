@@ -1,0 +1,46 @@
+{
+  "name": "why-no-stars",
+  "version": "1.0.0",
+  "description": "Find out exactly why your repo isn't getting stars — 27 evidence-backed checks, ecosystem star-percentile benchmark, and a shareable SVG scorecard. Zero dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "wns": "bin.js",
+    "why-no-stars": "bin.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "files": [
+    "bin.js",
+    "src/",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "github",
+    "cli",
+    "stars",
+    "audit",
+    "readme",
+    "open-source",
+    "developer-tools",
+    "scorecard",
+    "oss",
+    "growth",
+    "diagnostics"
+  ],
+  "author": "paopaonb666",
+  "license": "MIT",
+  "homepage": "https://github.com/paopaonb666/why-no-stars#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paopaonb666/why-no-stars.git"
+  },
+  "bugs": {
+    "url": "https://github.com/paopaonb666/why-no-stars/issues"
+  }
+}
