@@ -1,0 +1,57 @@
+# Gate your repo's "why-no-stars" score in CI.
+#
+# Copy this file into .github/workflows/ of the repository you want to
+# audit. The audit runs on every push to main; the job fails when the
+# scorecard drops below --fail-under, so a landing-page regression can't
+# sneak in silently.
+#
+#   exit 0  -> score >= threshold
+#   exit 10 -> score <  threshold (the gate)
+#   exit 1  -> tool error (bad flag, repo not found, network)
+#   exit 2  -> rate-limited (retry later; set GITHUB_TOKEN to make this rare)
+
+name: Repo scorecard gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays, 09:00 UTC — watch for silent decay
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # GITHUB_TOKEN is pre-provided by Actions: 1,000 API req/h, enough for
+      # the ~13-call audit plus the 7-call ecosystem benchmark.
+      - name: Audit the repo landing page
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx github:paopaonb666/why-no-stars "${{ github.repository }}" \
+            --fail-under 70 \
+            --md scorecard.md \
+            --json scorecard.json
+
+      # Optional: keep the report as a build artifact instead of committing it.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scorecard
+          path: |
+            scorecard.md
+            scorecard.json
