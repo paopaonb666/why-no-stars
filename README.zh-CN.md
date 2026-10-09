@@ -143,6 +143,14 @@ npx github:paopaonb666/why-no-stars 用户名/仓库 --svg scorecard.svg --json 
 
 </details>
 
+## 文档
+
+- [发布作战手册](./docs/LAUNCH.md) —— 从 0 到 1000 星的完整计划（分发是人的运动，无法自动化）
+- [发布文案包](./docs/launch/) —— Show HN / Reddit / V2EX / 掘金成品文案，打开即贴
+- [自审报告](./docs/self-report.md) —— 本仓库用自家工具体检的完整报告（Markdown 版）
+- [生成产物示例](./examples/) —— got 与 express 的真实评分卡（SVG/PNG）和报告（MD/JSON）
+- [更新日志](./CHANGELOG.md) —— 每个版本，如实记录
+
 ## FAQ
 
 **这不就是个 README linter 吗？**

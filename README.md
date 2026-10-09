@@ -145,6 +145,14 @@ Exit codes: `0` ok · `1` error (repo not found, bad flag…) · `2` rate-limite
 
 </details>
 
+## Docs
+
+- [Launch playbook](./docs/LAUNCH.md) — the plan for getting from 0 to 1,000 stars (distribution is a human sport)
+- [Launch post drafts](./docs/launch/) — ready-to-paste Show HN / Reddit / V2EX / Juejin copy
+- [Self-audit report](./docs/self-report.md) — this repo audited by its own tool, in Markdown
+- [Generated examples](./examples/) — real scorecards (SVG/PNG) and reports (MD/JSON) from got & express
+- [CHANGELOG](./CHANGELOG.md) — every release, kept honest
+
 ## FAQ
 
 **Is this just a README linter?**

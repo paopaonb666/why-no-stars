@@ -8,3 +8,10 @@ docs/launch/.v2ex-*.txt
 .npm-credentials-local.txt
 docs/launch/.juejin-*.txt
 docs/launch/.v2ex-*.txt
+
+# 本地专用，不上传云端
+boyuan-workbench/
+.mimosa/
+.zcodeignore
+docs/optimization-2026-09-27*.md
+docs/self-screening-cycles-report.md
