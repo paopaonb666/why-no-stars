@@ -13,7 +13,7 @@ Zero dependencies. Zero config. No API key required.
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
 [![Stars](https://img.shields.io/github/stars/paopaonb666/why-no-stars?style=social)](https://github.com/paopaonb666/why-no-stars/stargazers)
 
-<img src="./examples/self-scorecard.svg" alt="why-no-stars auditing itself: 85/100 at launch, momentum honestly 0" width="720">
+<img src="./examples/self-scorecard.svg" alt="why-no-stars auditing itself: 89/100 after following its own advice, momentum honestly 0" width="720">
 
 [English](#english) · [中文文档](./README.zh-CN.md)
 
@@ -118,7 +118,7 @@ Even an S-grade repo gets actionable feedback. The full report is in [`examples/
 
 ## We audit ourselves
 
-Dogfooding is not optional here. The hero card above is `why-no-stars` auditing **this very repo**, minutes after launch. Three pillars sit at 90–100; the deductions are real items on our list (homepage URL is next). Momentum is 0 because we launched today, and the tool refuses to pretend otherwise. The only pillar we can't fix ourselves is the one you're holding. 😉
+Dogfooding is not optional here. The hero card above is `why-no-stars` auditing **this very repo**. At launch it scored 85: the tool told us to set the About homepage and add a docs section — we did both, and the score moved to 89. That's the whole method, working on its author. Momentum is still 0 because the stars are still 0, and the tool refuses to pretend otherwise. The only pillar we can't fix ourselves is the one you're holding. 😉
 
 <details>
 <summary><strong>All flags & outputs</strong></summary>

@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed (self-audit round)
+- **Dogfooded the tool on this repo and applied its own advice**: both warnings fixed (About homepage URL set; Docs/文档 sections added to both READMEs linking the launch playbook, drafts, and self-report) — self score 85 → 89, `examples/self-scorecard.svg` / `examples/self-report.json` / `docs/self-report.md` regenerated from the post-fix audit. Remaining deductions are honest ones: 1 contributor, 0 stars.
+- README/CHANGELOG synced with the round 2–3 code that was already shipped (quick-win `+X.X pts` labels, `--no-cache` / `--fail-under` / delta line, exit code 10).
+- `.gitignore` now excludes local-only working files (internal optimization reports, personal workbench).
+
 ### Added (round 3)
 - **ETag conditional requests** (`src/cache.js` + `src/api.js`): etags stored per request; past the TTL the client revalidates with `If-None-Match` and GitHub answers 304 **without charging the rate limit** — repeat audits cost ~0 quota instead of ~13 calls, decisive for the unauthenticated 60 req/h budget. Conditional hits are surfaced on stderr.
 - **`-` stdout output**: `--svg -`, `--json -`, `--md -` print to stdout for piping.

@@ -13,7 +13,7 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
 [![Stars](https://img.shields.io/github/stars/paopaonb666/why-no-stars?style=social)](https://github.com/paopaonb666/why-no-stars/stargazers)
 
-<img src="./examples/self-scorecard.svg" alt="why-no-stars 自审计：发布当天 85/100，增长势头诚实地为 0" width="720">
+<img src="./examples/self-scorecard.svg" alt="why-no-stars 自审计：照自家建议修复后 89/100，增长势头诚实地为 0" width="720">
 
 [English](./README.md) · [中文](#中文)
 
@@ -116,7 +116,7 @@ expressjs/express: 93/100 (S) · star 数超过同类仓库的 99–100%
 
 ## 我们给自己也做体检
 
-言行一致不是口号。上面的主图就是 `why-no-stars` 体检**它自己**的真实报告（发布几分钟后跑的）。三大支柱在 90–100；扣掉的分都是我们待办清单上的真问题（下一个是主页链接）。增长势头是 0，因为今天刚发布——工具拒绝装糊涂。唯一一个我们自己修不了的支柱，就握在你手里。 😉
+言行一致不是口号。上面的主图就是 `why-no-stars` 体检**它自己**的真实报告。发布时它给自己打 85 分：工具让我们补 About 主页链接、加文档小节——照做之后涨到 89 分，整套方法在作者自己身上生效的样子。增长势头依然是 0，因为星数依然是 0——工具拒绝装糊涂。唯一一个我们自己修不了的支柱，就握在你手里。 😉
 
 <details>
 <summary><strong>全部参数与输出格式</strong></summary>

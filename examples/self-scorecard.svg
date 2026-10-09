@@ -16,9 +16,10 @@
 
   <text x="90" y="84" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="40" font-weight="700" fill="#e6edf3">paopaonb666/why-no-stars</text>
   <text x="90" y="124" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="22" fill="#8b949e">★ 0   ·   JavaScript   ·   Grade A</text>
-  <text x="90" y="166" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" fill="#58a6ff">Ecosystem: more stars than 0–91% of JavaScript repos · 90% of peers have 0 stars; median peer: 0</text>
+  <text x="90" y="166" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#58a6ff">Ecosystem: more stars than 0–91% of JavaScript repos · 90% of peers have 0 stars; median peer: 0</text>
+  
 
-  <text x="90" y="300" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="110" font-weight="800" fill="#3fb950">85</text>
+  <text x="90" y="300" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="110" font-weight="800" fill="#3fb950">89</text>
   <text x="90" y="336" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="24" fill="#8b949e">/100 overall</text>
 
   <rect x="340" y="220" width="86" height="86" rx="18" fill="#3fb950" opacity="0.15"/>
@@ -27,12 +28,12 @@
   
     <text x="90" y="356" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">First impression</text>
     <rect x="430" y="342" width="300" height="13" rx="6.5" fill="#21262d"/>
-    <rect x="430" y="342" width="282.0" height="13" rx="6.5" fill="#3fb950"/>
-    <text x="752" y="356" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">94</text>
+    <rect x="430" y="342" width="300.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="356" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
     <text x="90" y="396" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Time-to-hello-world</text>
     <rect x="430" y="382" width="300" height="13" rx="6.5" fill="#21262d"/>
-    <rect x="430" y="382" width="270.0" height="13" rx="6.5" fill="#3fb950"/>
-    <text x="752" y="396" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">90</text>
+    <rect x="430" y="382" width="300.0" height="13" rx="6.5" fill="#3fb950"/>
+    <text x="752" y="396" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#3fb950">100</text>
     <text x="90" y="436" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#c9d1d9">Trust &amp; maintenance</text>
     <rect x="430" y="422" width="300" height="13" rx="6.5" fill="#21262d"/>
     <rect x="430" y="422" width="279.0" height="13" rx="6.5" fill="#3fb950"/>
@@ -50,5 +51,5 @@
     <rect x="430" y="542" width="0.0" height="13" rx="6.5" fill="#f85149"/>
     <text x="752" y="556" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#f85149">0</text>
 
-  <text x="90" y="608" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="19" fill="#8b949e">why-no-stars · stars aren’t luck. they’re the first 10 seconds, done right.   npx why-no-stars &lt;owner/repo&gt;</text>
+  <text x="90" y="608" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="14" fill="#8b949e">why-no-stars · stars aren’t luck. they’re the first 10 seconds, done right.   npx github:paopaonb666/why-no-stars &lt;owner/repo&gt;</text>
 </svg>

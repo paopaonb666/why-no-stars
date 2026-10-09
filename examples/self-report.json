@@ -1,4 +1,5 @@
 {
+  "schema": 1,
   "repo": {
     "fullName": "paopaonb666/why-no-stars",
     "stars": 0,
@@ -18,36 +19,66 @@
       "scorecard",
       "stars"
     ],
-    "pushedAt": "2026-09-27T07:53:50Z"
+    "pushedAt": "2026-10-09T08:47:31Z",
+    "isArchived": false,
+    "isFork": false
   },
-  "overall": 85,
+  "overall": 89,
   "grade": "A",
+  "quickWins": [
+    {
+      "id": "recent-stars",
+      "title": "Stars in the last 28 days",
+      "recoverable": 5,
+      "impact": "high"
+    },
+    {
+      "id": "star-velocity",
+      "title": "Stars per week (recent)",
+      "recoverable": 5,
+      "impact": "medium"
+    },
+    {
+      "id": "contributors",
+      "title": "Contributors (2+)",
+      "recoverable": 1.4,
+      "impact": "medium"
+    }
+  ],
+  "stats": {
+    "total": 32,
+    "passed": 29,
+    "failed": 2,
+    "skipped": 0
+  },
   "benchmark": {
     "lowerPct": 0,
-    "upperPct": 90.03,
+    "upperPct": 90.05,
     "buckets": [
-      42834185,
-      3696495,
-      697374,
-      291803,
-      49017,
-      7048,
+      43153961,
+      3717513,
+      700326,
+      292742,
+      49149,
+      7084,
       677
     ],
     "peerLanguage": "JavaScript",
-    "totalPeers": 47576599
+    "totalPeers": 47921452,
+    "share0Pct": 90.1,
+    "medianBucket": "0"
   },
   "pillars": [
     {
       "id": "first-impression",
       "name": "First impression",
-      "score": 94,
+      "score": 100,
       "weight": 25
     },
     {
       "id": "quickstart",
       "name": "Time-to-hello-world",
-      "score": 90,
+      "score": 100,
       "weight": 20
     },
     {
@@ -98,9 +129,9 @@
       "id": "homepage",
       "pillar": "first-impression",
       "title": "Homepage URL",
-      "status": "warn",
+      "status": "pass",
       "impact": "medium",
-      "detail": "No homepage URL in the About sidebar.",
+      "detail": "https://github.com/paopaonb666/why-no-stars/tree/main/docs",
       "fix": "Set the repo homepage (docs site, demo, or README anchor) — it is the only clickable field in the About box."
     },
     {
@@ -109,7 +140,7 @@
       "title": "README exists",
       "status": "pass",
       "impact": "low",
-      "detail": "195 lines",
+      "detail": "200 lines · also available in: README.zh-CN.md",
       "fix": ""
     },
     {
@@ -188,9 +219,9 @@
       "id": "docs-link",
       "pillar": "quickstart",
       "title": "Docs / guide pointer",
-      "status": "warn",
+      "status": "pass",
       "impact": "low",
-      "detail": "No docs site link or guide section found.",
+      "detail": "Homepage: https://github.com/paopaonb666/why-no-stars/tree/main/docs",
       "fix": "Link fuller docs (wiki, docs site, or ./docs) from the top of the README."
     },
     {
@@ -217,7 +248,7 @@
       "title": "CI configured",
       "status": "pass",
       "impact": "medium",
-      "detail": "2 GitHub Actions workflow(s).",
+      "detail": "3 GitHub Actions workflow(s).",
       "fix": "Add a CI workflow (build + test) and show its badge at the top of the README."
     },
     {
@@ -235,7 +266,7 @@
       "title": "Releases / tags",
       "status": "pass",
       "impact": "medium",
-      "detail": "2 release(s), latest “v1.0.1”.",
+      "detail": "3 published release(s), latest “v1.1.0”.",
       "fix": "Publish a GitHub Release with readable notes. Releases trigger watcher emails and look maintained."
     },
     {
@@ -253,7 +284,7 @@
       "title": "Semver tags",
       "status": "pass",
       "impact": "low",
-      "detail": "2/2 tags are version-shaped (X.Y or X.Y.Z).",
+      "detail": "4/4 tags are version-shaped (X.Y or X.Y.Z).",
       "fix": "Tag versions as v1.2 (or v1.2.3). Consistent version tags communicate stability to humans and package managers."
     },
     {
@@ -271,7 +302,7 @@
       "title": "PR template",
       "status": "pass",
       "impact": "low",
-      "detail": "Found: [object Object]",
+      "detail": "Found: https://github.com/paopaonb666/why-no-stars/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
       "fix": "Add a short PULL_REQUEST_TEMPLATE.md (what/why/how tested)."
     },
     {
@@ -280,7 +311,7 @@
       "title": "CONTRIBUTING guide",
       "status": "pass",
       "impact": "medium",
-      "detail": "Found: [object Object]",
+      "detail": "Found: https://github.com/paopaonb666/why-no-stars/blob/main/CONTRIBUTING.md",
       "fix": "Add CONTRIBUTING.md: how to set up dev env, run tests, and open a PR. Lower the barrier and outsiders appear."
     },
     {
@@ -298,7 +329,7 @@
       "title": "Code of conduct",
       "status": "pass",
       "impact": "low",
-      "detail": "Found: [object Object]",
+      "detail": "Found: Other",
       "fix": "Add a CODE_OF_CONDUCT.md (GitHub provides a template in one click)."
     },
     {
@@ -325,7 +356,7 @@
       "title": "README depth (50–1200 lines)",
       "status": "pass",
       "impact": "medium",
-      "detail": "195 lines",
+      "detail": "200 lines",
       "fix": "Too long: move details into docs/ and keep the README to one screen of decision-making info."
     },
     {
@@ -361,10 +392,12 @@
       "title": "Stars per week (recent)",
       "status": "fail",
       "impact": "medium",
-      "detail": "0.0 stars/week over 1 weeks (lifetime average).",
+      "detail": "0.0 stars/week over 2 weeks (lifetime average).",
       "fix": "If velocity is near zero, treat the README as a landing page and re-launch the project (rename, rewrite the pitch, post again)."
     }
   ],
-  "generatedAt": "2026-09-27T08:37:06.598Z",
-  "tool": "why-no-stars v1.0.1"
+  "delta": null,
+  "stale": false,
+  "generatedAt": "2026-10-09T08:47:51.058Z",
+  "tool": "why-no-stars v1.1.1"
 }
