@@ -33,13 +33,13 @@ A visitor lands on your repo, skims for a reason to care, and bounces. `why-no-s
 
 ```text
   ⚡ Top fixes
-  1. [HIGH] Install command near the top
+  1. [+3.9 pts] Install command near the top
      First installable command at line 62
      → Move the copy-paste install one-liner into the first screen of the README.
-  2. [HIGH] Hero image / GIF above the fold
+  2. [+3.9 pts] Hero image / GIF above the fold
      Only badge images found — no real screenshot/demo/hero.
      → Put a screenshot/GIF/demo within the first ~40 lines.
-  3. [MED] Issue template
+  3. [+2.0 pts] Issue template
      No issue template.
      → Add .github/ISSUE_TEMPLATE with bug + feature forms.
 ```
@@ -108,9 +108,9 @@ We audited [`sindresorhus/got`](https://github.com/sindresorhus/got) — one of 
   ...
 
   ⚡ Top fixes
-  1. [MED] Homepage URL
+  1. [+2.0 pts] Homepage URL
      No homepage URL in the About sidebar.
-  2. [HIGH] Install command near the top
+  2. [+3.9 pts] Install command near the top
      First installable command at line 71
 ```
 
@@ -134,10 +134,14 @@ npx github:paopaonb666/why-no-stars me/my-project --svg scorecard.svg --json rep
 | `--md <file>` | Markdown report to paste into an issue or discussion |
 | `--zh` / `--en` | Output language (auto-detected from `LANG` by default) |
 | `--no-benchmark` | Skip the percentile (saves 7 API calls) |
+| `--no-cache` | Skip the on-disk cache and run history (repo data cached 30 min, benchmark counts 24 h) |
+| `--fail-under <n>` | Exit with code `10` when the score is below `<n>` (use it as a CI gate) |
 | `--token <t>` | GitHub token (else `GITHUB_TOKEN`/`GH_TOKEN`) |
-| `--quiet` | One line: score + grade + percentile |
+| `--quiet` | One line: score + grade + percentile + delta |
 
-Exit codes: `0` ok · `1` error (repo not found, bad flag…) · `2` rate-limited.
+Run it again after fixing things and the report shows your progress: `▲ +3 pts (your run 2 h ago: 90)`. Under rate limiting, a cached-but-clearly-flagged (STALE) report is rendered instead of dead-ending.
+
+Exit codes: `0` ok · `1` error (repo not found, bad flag…) · `2` rate-limited · `10` score below `--fail-under`.
 
 </details>
 
