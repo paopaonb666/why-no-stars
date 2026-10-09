@@ -4,10 +4,7 @@ node_modules/
 out/
 .wns-cache/
 
-docs/launch/.v2ex-*.txt
 .npm-credentials-local.txt
-docs/launch/.juejin-*.txt
-docs/launch/.v2ex-*.txt
 
 # 本地专用，不上传云端
 boyuan-workbench/

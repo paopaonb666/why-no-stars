@@ -23,6 +23,8 @@
 
 <a name="中文"></a>
 
+> **状态：已完结（2026-10-09）。** v1.2.0 是最终版本：工具可用、测试全绿，项目到此为止。未执行的计�划（npm 发布、推广发帖、路线图）已全部移除、不留悬账，仓库已归档——欢迎 fork 续命。
+
 ## 一句话介绍
 
 你做了一个好东西，能跑、有测试、骄傲地推上 GitHub。然后它只有 **47 个 star**。（其中十四个是你同事点的，我们数过了。）
@@ -145,8 +147,6 @@ npx github:paopaonb666/why-no-stars 用户名/仓库 --svg scorecard.svg --json 
 
 ## 文档
 
-- [发布作战手册](./docs/LAUNCH.md) —— 从 0 到 1000 星的完整计划（分发是人的运动，无法自动化）
-- [发布文案包](./docs/launch/) —— Show HN / Reddit / V2EX / 掘金成品文案，打开即贴
 - [自审报告](./docs/self-report.md) —— 本仓库用自家工具体检的完整报告（Markdown 版）
 - [生成产物示例](./examples/) —— got 与 express 的真实评分卡（SVG/PNG）和报告（MD/JSON）
 - [更新日志](./CHANGELOG.md) —— 每个版本，如实记录
@@ -166,21 +166,13 @@ npx github:paopaonb666/why-no-stars 用户名/仓库 --svg scorecard.svg --json 
 ## 已知局限
 
 - 全部发现都是启发式（正则 + API 元数据），完全离线、确定性运行，不会上传任何代码。
-- 生态分位对比的是同主语言的 star 数量，暂未按仓库年龄归一化（在路线图上）。
+- 生态分位对比的是同主语言的 star 数量，暂未按仓库年龄归一化。
 - 超大仓库（>约 4 万 star）的"近期 star"数据来自公开事件流的采样下限，因为 GitHub 限制了 stargazers 深分页。
 - 没有包管理清单的项目（内核、原生代码）在生态特定检查上会得到更温和的判定——工具会在输出中说明，而不是瞎猜。
 
-## 路线图
-
-- [ ] `wns --local .` — 不走 API，直接体检本地目录
-- [ ] 按年龄归一化的分位（与同期的仓库对比）
-- [ ] `--watch` 模式：定时复查，追踪各支柱分数变化
-- [ ] GitHub Action：README 变更时自动体检并评论
-- [ ] 分支柱分位对比（与体量相近的同语言仓库样本）
-
 ## 参与贡献
 
-Issue 和 PR 都欢迎，见 [CONTRIBUTING.md](./CONTRIBUTING.md)。加一个新检查只要 ~30 行：一个接收 facts 返回 `{ status, detail, fix, impact }` 的函数。[检查项注册表](./src/checks)刻意写得非常朴素。
+项目已随 v1.2.0 完结，仓库已归档——不再接受 issue 和 PR，欢迎 fork 继续。留给 fork 的人：加一个新检查只要 ~30 行，一个接收 facts 返回 `{ status, detail, fix, impact }` 的函数；[检查项注册表](./src/checks)刻意写得非常朴素。[CONTRIBUTING.md](./CONTRIBUTING.md) 留作参考。
 
 ## License
 

@@ -23,6 +23,8 @@ Zero dependencies. Zero config. No API key required.
 
 <a name="english"></a>
 
+> **Status: complete — concluded 2026-10-09.** v1.2.0 is the final release: the tool works, the tests pass, and development ends here on purpose. Unexecuted plans (npm publish, launch posts, the roadmap) were removed rather than left dangling, and the repository is archived — forks carry it forward.
+
 ## The pitch
 
 You built something good. It works, it's tested, you pushed it with pride.
@@ -147,8 +149,6 @@ Exit codes: `0` ok · `1` error (repo not found, bad flag…) · `2` rate-limite
 
 ## Docs
 
-- [Launch playbook](./docs/LAUNCH.md) — the plan for getting from 0 to 1,000 stars (distribution is a human sport)
-- [Launch post drafts](./docs/launch/) — ready-to-paste Show HN / Reddit / V2EX / Juejin copy
 - [Self-audit report](./docs/self-report.md) — this repo audited by its own tool, in Markdown
 - [Generated examples](./examples/) — real scorecards (SVG/PNG) and reports (MD/JSON) from got & express
 - [CHANGELOG](./CHANGELOG.md) — every release, kept honest
@@ -168,21 +168,13 @@ Possibly. The grades go down to **F**. The intended loop: run it → fix the top
 ## Limitations
 
 - Findings are heuristic (regex + API metadata), intentionally offline and deterministic. No repo code is uploaded anywhere.
-- The percentile compares star *counts* across your primary language; it doesn't normalize by repo age yet (on the roadmap).
+- The percentile compares star *counts* across your primary language; it doesn't normalize by repo age.
 - Star recency for very large repos (>~40k stars) is a lower bound sampled from the public events feed, because GitHub caps deep stargazers pagination.
 - Projects without a package manifest (kernels, native code) get softer verdicts on ecosystem-specific checks — the tool says so in the output instead of guessing.
 
-## Roadmap
-
-- [ ] `wns --local .` — audit a local folder without the API
-- [ ] Age-normalized percentile (comparing against repos of similar age)
-- [ ] `--watch` mode: re-audit on a schedule and track pillar deltas
-- [ ] GitHub Action: post a scorecard on every README change
-- [ ] Per-pillar percentile vs. a peer sample of similar-size repos
-
 ## Contributing
 
-Issues and PRs are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Adding a new check is ~30 lines: a function that takes facts and returns `{ status, detail, fix, impact }`. The [check registry](./src/checks) is deliberately boring.
+The project concluded with v1.2.0 and the repository is archived — issues and PRs are closed for good, and forking is the way forward. For anyone forking: adding a new check is ~30 lines, a function that takes facts and returns `{ status, detail, fix, impact }`; the [check registry](./src/checks) is deliberately boring. [CONTRIBUTING.md](./CONTRIBUTING.md) remains as reference.
 
 ## License
 

@@ -3,10 +3,18 @@
 All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.2.0] — 2026-10-09 · the final release
+
+The project is concluded on purpose: it works, the tests pass (99/99), and it stops here. Unexecuted plans (npm publish, launch posts, the roadmap) were removed rather than left dangling; the publish workflow and Dependabot config went with them, and the repository is archived. `npx github:paopaonb666/why-no-stars <owner/repo>` keeps working straight from the git source.
+
+### Removed (conclusion)
+- `docs/LAUNCH.md` and `docs/launch/` — the launch playbook and post drafts, never executed.
+- The README roadmap sections (both languages) and their references.
+- `.github/workflows/publish.yml` — publishing was never done and is cancelled with the project.
+- `.github/dependabot.yml` — a concluded repo takes no dependency updates.
 
 ### Changed (self-audit round)
-- **Dogfooded the tool on this repo and applied its own advice**: both warnings fixed (About homepage URL set; Docs/文档 sections added to both READMEs linking the launch playbook, drafts, and self-report) — self score 85 → 89, `examples/self-scorecard.svg` / `examples/self-report.json` / `docs/self-report.md` regenerated from the post-fix audit. Remaining deductions are honest ones: 1 contributor, 0 stars.
+- **Dogfooded the tool on this repo and applied its own advice**: both warnings fixed (About homepage URL set; Docs/文档 sections added to both READMEs linking the self-report and generated examples) — self score 85 → 89, `examples/self-scorecard.svg` / `examples/self-report.json` / `docs/self-report.md` regenerated from the post-fix audit. Remaining deductions are honest ones: 1 contributor, 0 stars.
 - README/CHANGELOG synced with the round 2–3 code that was already shipped (quick-win `+X.X pts` labels, `--no-cache` / `--fail-under` / delta line, exit code 10).
 - `.gitignore` now excludes local-only working files (internal optimization reports, personal workbench).
 

@@ -1,6 +1,6 @@
 {
   "name": "@paopaonb666/why-no-stars",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Find out exactly why your repo isn't getting stars. 32 evidence-backed checks, ecosystem benchmark, shareable scorecard. Zero dependencies.",
   "type": "module",
   "engines": {
